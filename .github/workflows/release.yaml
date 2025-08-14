@@ -49,7 +49,7 @@ jobs:
       releaseId: ${{ steps.create_release.outputs.id}}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.branch }}
       - name: Generate tag utilities
@@ -114,7 +114,7 @@ jobs:
     needs: tag
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ needs.tag.outputs.githubTag }}
 
@@ -165,7 +165,7 @@ jobs:
     needs: [builder-image, tag]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
