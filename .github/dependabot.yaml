@@ -1,0 +1,39 @@
+# Set update schedule for GitHub Actions
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      # check at 3am UTC
+      time: "03:00"
+    open-pull-requests-limit: 20
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: daily
+      # check at 3am UTC
+      time: "03:00"
+    open-pull-requests-limit: 20
+    groups:
+      commitlint:
+        applies-to: version-updates
+        patterns:
+          - "@commitlint/*"
+      eslint:
+        applies-to: version-updates
+        patterns:
+          - "eslint"
+          - "@eslint/*"
+      typescript-eslint:
+        applies-to: version-updates
+        patterns:
+          - "@typescript-eslint/*"
+          - "typescript-eslint"
+      vitest:
+        applies-to: version-updates
+        patterns:
+          - "@vitest/*"
+          - "vitest"

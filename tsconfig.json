@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "lib": ["ES2017", "webworker", "dom"],
+    "sourceMap": true,
+    "outDir": "dist",
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "paths": {
+      "/@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "types/*.d.ts", "vite.config.ts", "vitest.config.ts"]
+}
