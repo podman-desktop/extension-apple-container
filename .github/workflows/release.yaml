@@ -151,7 +151,7 @@ jobs:
           registry: ghcr.io/${{ github.repository_owner }}
 
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/podman-desktop-ibmcloud-account-ext-builder
           subject-digest: ${{ steps.push-to-ghcr.outputs.digest }}
@@ -202,7 +202,7 @@ jobs:
           registry: ghcr.io/${{ github.repository_owner }}
 
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/podman-desktop-ibmcloud-account-ext
           subject-digest: ${{ steps.push-to-ghcr.outputs.digest }}
