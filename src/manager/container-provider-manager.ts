@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { inject, injectable } from 'inversify';
-import { homedir } from 'node:os';
+import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { ExtensionContextSymbol } from '/@/inject/symbol';
 import {
@@ -40,41 +40,34 @@ export class ContainerProviderManager {
 
   private providerState: ProviderConnectionStatus = 'stopped';
 
-
   async registerContainerProvider(): Promise<void> {
-
-
     const podmanDesktopProvider = provider.createProvider({
-    name: 'Apple',
-    id: ContainerProviderManager.PROVIDER_ID,
-    status: 'ready',
-    images: {
-      icon: './icon.png',
-      logo: './logo.png',
-    },
-  });
+      name: 'Apple',
+      id: ContainerProviderManager.PROVIDER_ID,
+      status: 'ready',
+      images: {
+        icon: './icon.png',
+        logo: './logo.png',
+      },
+    });
     this.extensionContext.subscriptions.push(podmanDesktopProvider);
 
     const homeDir = homedir();
-   const socketPath = resolve(homeDir, '.socktainer', 'container.sock');
-   
+    const socketPath = resolve(homeDir, '.socktainer', 'container.sock');
 
-   this.providerState = 'started';
+    this.providerState = 'started';
 
-  const containerProviderConnection: ContainerProviderConnection = {
-    name: 'Apple',
-    type: 'docker',
-    status: (): ProviderConnectionStatus => this.providerState,
-    endpoint: {
-      socketPath,
-    },
-  };
+    const containerProviderConnection: ContainerProviderConnection = {
+      name: 'Apple',
+      type: 'docker',
+      status: (): ProviderConnectionStatus => this.providerState,
+      endpoint: {
+        socketPath,
+      },
+    };
 
-  const connectionDisposable = podmanDesktopProvider.registerContainerProviderConnection(containerProviderConnection);
+    const connectionDisposable = podmanDesktopProvider.registerContainerProviderConnection(containerProviderConnection);
 
-  this.extensionContext.subscriptions.push(connectionDisposable);
-
-
+    this.extensionContext.subscriptions.push(connectionDisposable);
   }
-
 }

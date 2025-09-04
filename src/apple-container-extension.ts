@@ -54,7 +54,6 @@ export class AppleContainerExtension {
   }
 
   protected async deferActivate(): Promise<void> {
-
     if (env.isMac) {
       console.info('Apple Container Extension activated on macOS');
       await this.#containerProviderManager?.registerContainerProvider();
