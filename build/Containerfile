@@ -15,7 +15,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM quay.io/fbenoit/apple-container-extension-builder:next AS builder
+FROM ghcr.io/benoitf/extension-apple-container-builder:next AS builder
 
 WORKDIR /opt/app-root/extension-source
 
