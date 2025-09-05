@@ -56,6 +56,7 @@ export class ContainerProviderManager {
   #stopMonitoringStatus = false;
 
   async registerContainerProvider(): Promise<void> {
+    this.#stopMonitoringStatus = false;
     const appleProvider = provider.createProvider({
       name: 'Apple',
       id: ContainerProviderManager.PROVIDER_ID,
@@ -73,6 +74,7 @@ export class ContainerProviderManager {
   }
 
   async deactivate(): Promise<void> {
+    this.#stopMonitoringStatus = true;
     if (this.#socktainerProcess) {
       await this.cleanupConnection();
     }
