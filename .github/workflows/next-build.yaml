@@ -69,7 +69,7 @@ jobs:
         id: builder-image
         uses: redhat-actions/buildah-build@v2
         with:
-          image: apple-container-extension-builder
+          image: extension-apple-container-builder
           tags: next ${{ github.sha }}
           platforms: linux/amd64, linux/arm64
           containerfiles: |
@@ -95,7 +95,7 @@ jobs:
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
         with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/podman-desktop-ibmcloud-account-ext-builder
+          subject-name: ghcr.io/${{ github.repository_owner }}/extension-apple-container-builder
           subject-digest: ${{ steps.push-to-ghcr.outputs.digest }}
           push-to-registry: true
 
@@ -120,7 +120,7 @@ jobs:
         id: extension-image
         uses: redhat-actions/buildah-build@v2
         with:
-          image: podman-desktop-ibmcloud-account-ext
+          image: extension-apple-container
           tags: next ${{ github.sha }}
           archs: amd64, arm64
           containerfiles: |
@@ -146,6 +146,6 @@ jobs:
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v3
         with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/podman-desktop-ibmcloud-account-ext
+          subject-name: ghcr.io/${{ github.repository_owner }}/extension-apple-container
           subject-digest: ${{ steps.push-to-ghcr.outputs.digest }}
           push-to-registry: true
