@@ -16,10 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { type ExtensionContext, env } from '@podman-desktop/api';
+import { type TelemetryLogger, type ExtensionContext, env } from '@podman-desktop/api';
 import { InversifyBinding } from './inject/inversify-binding';
 import type { Container } from 'inversify';
 import { ContainerProviderManager } from './manager/container-provider-manager';
+import { platform, arch } from 'node:os';
 
 export class AppleContainerExtension {
   readonly #extensionContext: ExtensionContext;
@@ -30,13 +31,15 @@ export class AppleContainerExtension {
 
   #container: Container | undefined;
 
+  #telemetryLogger: TelemetryLogger | undefined;
+
   constructor(readonly extensionContext: ExtensionContext) {
     this.#extensionContext = extensionContext;
   }
 
   async activate(): Promise<void> {
     const telemetryLogger = env.createTelemetryLogger();
-
+    this.#telemetryLogger = telemetryLogger;
     this.#inversifyBinding = new InversifyBinding(this.#extensionContext, telemetryLogger);
     this.#container = await this.#inversifyBinding.initBindings();
 
@@ -54,14 +57,19 @@ export class AppleContainerExtension {
   }
 
   protected async deferActivate(): Promise<void> {
-    if (env.isMac) {
-      console.info('Apple Container Extension activated on macOS');
+    if (env.isMac && arch() === 'arm64') {
+      console.log('Apple Container Extension activated on macOS/arm64');
+      this.#telemetryLogger?.logUsage('activated');
       await this.#containerProviderManager?.registerContainerProvider();
+    } else {
+      this.#telemetryLogger?.logError('invalidPlatform', {platform: platform(), arch: arch()});
+      console.warn('Apple Container Extension not started: can only be activated on macOS/arm64');
     }
   }
 
   async deactivate(): Promise<void> {
     await this.#inversifyBinding?.dispose();
+    await this.#containerProviderManager?.deactivate();
     this.#containerProviderManager = undefined;
   }
 

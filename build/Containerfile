@@ -15,7 +15,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM quay.io/fbenoit/appcont-builder:next AS builder
+FROM quay.io/fbenoit/apple-container-extension-builder:next AS builder
 
 WORKDIR /opt/app-root/extension-source
 
@@ -26,12 +26,14 @@ COPY *.png /opt/app-root/extension-source/
 COPY .gitignore /opt/app-root/extension-source/
 COPY *.json /opt/app-root/extension-source/
 COPY src /opt/app-root/extension-source/src
+COPY scripts /opt/app-root/extension-source/scripts
 COPY types /opt/app-root/extension-source/types
 COPY vite*.ts /opt/app-root/extension-source/
 
 # refresh dependencies (if needed)
 # and build the extension
 RUN pnpm install && \
+    pnpm download-dependencies && \
     pnpm build
 
 # copy output of the build + required files
@@ -51,6 +53,6 @@ FROM scratch
 LABEL org.opencontainers.image.title="Apple container extension" \
       org.opencontainers.image.description="Apple container extension" \
       org.opencontainers.image.vendor="podman-desktop" \
-      io.podman-desktop.api.version=">= 1.20.0"
+      io.podman-desktop.api.version=">= 1.21.0"
 
 COPY --from=builder /opt/app-root/extension /extension

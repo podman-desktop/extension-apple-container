@@ -1,7 +1,7 @@
 import type { ExtensionContext } from '@podman-desktop/api';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { activate, deactivate } from './main';
-import { IBMCloudExtension } from './apple-container-extension';
+import { AppleContainerExtension } from './apple-container-extension';
 
 let extensionContextMock: ExtensionContext;
 
@@ -15,30 +15,30 @@ beforeEach(() => {
   extensionContextMock = {} as ExtensionContext;
 });
 
-test('should initialize and activate the IBM Cloud Extension when activate is called', async () => {
+test('should initialize and activate the AppleContainerExtension when activate is called', async () => {
   expect.assertions(1);
 
   // Call activate
   await activate(extensionContextMock);
 
-  // Ensure that the IBM Cloud Extension is instantiated and its activate method is called
-  expect(IBMCloudExtension.prototype.activate).toHaveBeenCalledWith();
+  // Ensure that the AppleContainerExtension is instantiated and its activate method is called
+  expect(AppleContainerExtension.prototype.activate).toHaveBeenCalledWith();
 });
 
 test('should call deactivate when deactivate is called', async () => {
   expect.assertions(1);
 
-  // Call activate first to initialize IBM Cloud Extension
+  // Call activate first to initialize AppleContainerExtension
   await activate(extensionContextMock);
 
   // Call deactivate
   await deactivate();
 
   // Ensure that the deactivate method was called
-  expect(IBMCloudExtension.prototype.deactivate).toHaveBeenCalledWith();
+  expect(AppleContainerExtension.prototype.deactivate).toHaveBeenCalledWith();
 });
 
-test('should set ibmCloudExtension to undefined after deactivate is called', async () => {
+test('should set appleContainerExtension to undefined after deactivate is called', async () => {
   expect.assertions(2);
 
   // Call activate to initialize the extension
@@ -47,6 +47,6 @@ test('should set ibmCloudExtension to undefined after deactivate is called', asy
   // Call deactivate
   await deactivate();
 
-  expect(global).toHaveProperty('ibmCloudExtension');
-  expect((global as Record<string, unknown>).ibmCloudExtension).toBeUndefined();
+  expect(global).toHaveProperty('appleContainerExtension');
+  expect((global as Record<string, unknown>).appleContainerExtension).toBeUndefined();
 });

@@ -17,18 +17,29 @@
  ***********************************************************************/
 
 import type { ExtensionContext } from '@podman-desktop/api';
+import { env } from '@podman-desktop/api';
 import { beforeEach, expect, test, vi } from 'vitest';
 import type { Container, ServiceIdentifier } from 'inversify';
-import { IBMCloudExtension } from './apple-container-extension';
-import { AuthenticationProviderManager } from './manager/container-provider-manager';
+import { AppleContainerExtension } from './apple-container-extension';
+import { ContainerProviderManager } from './manager/container-provider-manager';
 import { InversifyBinding } from './inject/inversify-binding';
+import os from 'node:os';
 
 let extensionContextMock: ExtensionContext;
-let ibmCloudExtension: TestIBMCloudExtension;
+let appleContainerExtension: TestAppleContainerExtension;
 
 vi.mock(import('./manager/container-provider-manager'));
+vi.mock('os', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports
+  const actual = await importOriginal<typeof import('node:os')>();
+  return {
+    ...actual,
+    arch: vi.fn<(() => 'arm64')>(() => 'arm64'),
+  };
+});
 
-class TestIBMCloudExtension extends IBMCloudExtension {
+
+class TestAppleContainerExtension extends AppleContainerExtension {
   public async deferActivate(): Promise<void> {
     return super.deferActivate();
   }
@@ -44,41 +55,44 @@ beforeEach(() => {
 
   // Create a mock for the ExtensionContext
   extensionContextMock = {} as ExtensionContext;
-  ibmCloudExtension = new TestIBMCloudExtension(extensionContextMock);
+  appleContainerExtension = new TestAppleContainerExtension(extensionContextMock);
 });
 
 test('should activate correctly', async () => {
   expect.assertions(1);
 
-  await ibmCloudExtension.activate();
+  await appleContainerExtension.activate();
 
-  expect(ibmCloudExtension.getContainer()?.get(AuthenticationProviderManager)).toBeInstanceOf(
-    AuthenticationProviderManager,
+  expect(appleContainerExtension.getContainer()?.get(ContainerProviderManager)).toBeInstanceOf(
+    ContainerProviderManager,
   );
 });
 
 test('should call deferActivate correctly', async () => {
   expect.assertions(1);
 
-  await ibmCloudExtension.activate();
+  // Mock isMac and arch to arm64
+  vi.spyOn(os, 'arch').mockReturnValue('arm64');
+  (env.isMac as boolean) = true;
+  await appleContainerExtension.activate();
 
   // Check we called the registration methods
   await vi.waitFor(() => {
-    expect(AuthenticationProviderManager.prototype.registerAuthenticationProvider).toHaveBeenCalledWith();
+    expect(ContainerProviderManager.prototype.registerContainerProvider).toHaveBeenCalledWith();
   });
 });
 
 test('should deactivate correctly', async () => {
   expect.assertions(2);
 
-  await ibmCloudExtension.activate();
+  await appleContainerExtension.activate();
 
-  expect(ibmCloudExtension.getContainer()?.isBound(AuthenticationProviderManager)).toBe(true);
+  expect(appleContainerExtension.getContainer()?.isBound(ContainerProviderManager)).toBe(true);
 
-  await ibmCloudExtension.deactivate();
+  await appleContainerExtension.deactivate();
 
   // Check the bindings are gone
-  expect(ibmCloudExtension.getContainer()?.isBound(AuthenticationProviderManager)).toBe(false);
+  expect(appleContainerExtension.getContainer()?.isBound(ContainerProviderManager)).toBe(false);
 });
 
 test('should log error if deferActivate throws', async () => {
@@ -88,9 +102,9 @@ test('should log error if deferActivate throws', async () => {
   const spyConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
   // Mock deferActivate to throw
-  const spyDeferActivate = vi.spyOn(ibmCloudExtension, 'deferActivate').mockRejectedValueOnce(error);
+  const spyDeferActivate = vi.spyOn(appleContainerExtension, 'deferActivate').mockRejectedValueOnce(error);
 
-  await ibmCloudExtension.activate();
+  await appleContainerExtension.activate();
 
   await vi.waitFor(() => {
     expect(spyDeferActivate).toHaveBeenCalledWith();
@@ -100,7 +114,7 @@ test('should log error if deferActivate throws', async () => {
   spyConsoleError.mockRestore();
 });
 
-test('should log error if getAsync for AuthenticationProviderManager throws', async () => {
+test('should log error if getAsync for ContainerProviderManager throws', async () => {
   expect.assertions(2);
 
   const error = new Error('getAsync failure');
@@ -114,10 +128,10 @@ test('should log error if getAsync for AuthenticationProviderManager throws', as
   const spyInitBindings = vi.spyOn(InversifyBinding.prototype, 'initBindings');
   spyInitBindings.mockImplementation(initBindingsMock);
 
-  await ibmCloudExtension.activate();
+  await appleContainerExtension.activate();
 
-  expect(fakeContainer.getAsync).toHaveBeenCalledWith(AuthenticationProviderManager);
-  expect(spyConsoleError).toHaveBeenCalledWith('Error while creating the authentication provider manager', error);
+  expect(fakeContainer.getAsync).toHaveBeenCalledWith(ContainerProviderManager);
+  expect(spyConsoleError).toHaveBeenCalledWith('Error while creating the container provider manager', error);
 
   spyConsoleError.mockRestore();
 });

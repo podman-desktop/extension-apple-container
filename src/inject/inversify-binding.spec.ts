@@ -22,7 +22,6 @@ import type { ExtensionContext, TelemetryLogger } from '@podman-desktop/api';
 import { ExtensionContextSymbol, TelemetryLoggerSymbol } from './symbol';
 import type { BindWhenOnFluentSyntax } from 'inversify';
 import { Container } from 'inversify';
-import { helpersModule } from '../helper/helper-module';
 import { managersModule } from '../manager/manager-module';
 
 let inversifyBinding: InversifyBinding;
@@ -43,7 +42,7 @@ describe('inversifyBinding', () => {
   });
 
   it('should initialize bindings correctly', async () => {
-    expect.assertions(4);
+    expect.assertions(3);
 
     // Initialize bindings
     await inversifyBinding.initBindings();
@@ -53,7 +52,6 @@ describe('inversifyBinding', () => {
     expect(vi.mocked(Container.prototype.bind)).toHaveBeenCalledWith(TelemetryLoggerSymbol);
 
     // Expect load of modules
-    expect(vi.mocked(Container.prototype.load)).toHaveBeenCalledWith(helpersModule);
     expect(vi.mocked(Container.prototype.load)).toHaveBeenCalledWith(managersModule);
   });
 
