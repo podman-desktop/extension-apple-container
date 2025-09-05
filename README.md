@@ -4,6 +4,8 @@
 
 Podman Desktop extension to see Apple containers on macOS only (and arm64 only).
 
+<img width="1313" height="991" alt="image" src="https://github.com/user-attachments/assets/1895e15c-7518-4af7-9a3e-6542a29f027d" />
+
 ## Topics
 - [Installation](#installation)
 - [Contributing](#contributing)
