@@ -62,7 +62,7 @@ export class AppleContainerExtension {
       this.#telemetryLogger?.logUsage('activated');
       await this.#containerProviderManager?.registerContainerProvider();
     } else {
-      this.#telemetryLogger?.logError('invalidPlatform', {platform: platform(), arch: arch()});
+      this.#telemetryLogger?.logError('invalidPlatform', { platform: platform(), arch: arch() });
       console.warn('Apple Container Extension not started: can only be activated on macOS/arm64');
     }
   }

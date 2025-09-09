@@ -18,16 +18,11 @@
 import { afterEach, beforeEach, describe, expect, vi, it } from 'vitest';
 import { Container } from 'inversify';
 import { ExtensionContextSymbol, TelemetryLoggerSymbol } from '../inject/symbol';
-import {
-  type ExtensionContext,
-  type TelemetryLogger,
-  type TelemetryTrustedValue,
-} from '@podman-desktop/api';
+import { type ExtensionContext, type TelemetryLogger, type TelemetryTrustedValue } from '@podman-desktop/api';
 import { ContainerProviderManager } from './container-provider-manager';
 
 vi.mock(import('node:path'));
 vi.useFakeTimers();
-
 
 const telemetryLoggerMock = {
   logUsage: vi.fn<(eventName: string, data?: Record<string, unknown | TelemetryTrustedValue>) => void>(),
@@ -37,7 +32,7 @@ const extensionContextMock: ExtensionContext = {
   subscriptions: [],
 } as unknown as ExtensionContext;
 
-let containerProviderManager: ContainerProviderManager
+let containerProviderManager: ContainerProviderManager;
 
 // Create fresh instance each time
 const container = new Container();
@@ -52,10 +47,7 @@ beforeEach(async () => {
   container.bind(ExtensionContextSymbol).toConstantValue(extensionContextMock);
   container.bind(ContainerProviderManager).toSelf();
 
-
-  containerProviderManager = await container.getAsync<ContainerProviderManager>(
-    ContainerProviderManager,
-  );
+  containerProviderManager = await container.getAsync<ContainerProviderManager>(ContainerProviderManager);
 });
 
 afterEach(async () => {

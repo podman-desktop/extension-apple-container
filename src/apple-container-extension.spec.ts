@@ -29,15 +29,14 @@ let extensionContextMock: ExtensionContext;
 let appleContainerExtension: TestAppleContainerExtension;
 
 vi.mock(import('./manager/container-provider-manager'));
-vi.mock('os', async (importOriginal) => {
+vi.mock('os', async importOriginal => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports
   const actual = await importOriginal<typeof import('node:os')>();
   return {
     ...actual,
-    arch: vi.fn<(() => 'arm64')>(() => 'arm64'),
+    arch: vi.fn<() => 'arm64'>(() => 'arm64'),
   };
 });
-
 
 class TestAppleContainerExtension extends AppleContainerExtension {
   public async deferActivate(): Promise<void> {

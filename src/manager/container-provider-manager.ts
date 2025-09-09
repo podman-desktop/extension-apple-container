@@ -110,7 +110,7 @@ export class ContainerProviderManager {
     let systemInstalled = false;
     const telemetryProperties: Record<string, string | TelemetryTrustedValue> = {};
     try {
-      const {stdout} =await process.exec('/usr/local/bin/container', ['system', '--version']);
+      const { stdout } = await process.exec('/usr/local/bin/container', ['system', '--version']);
       telemetryProperties.version = stdout.trim();
       systemInstalled = true;
     } catch (error: unknown) {
