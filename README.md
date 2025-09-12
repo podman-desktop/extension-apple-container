@@ -6,6 +6,8 @@ A **Podman Desktop extension** to manage **Apple containers** on **macOS** (ARM6
 
 ![Apple container screenshot](https://github.com/user-attachments/assets/1895e15c-7518-4af7-9a3e-6542a29f027d)
 
+![Apple container screenshot2](https://github.com/user-attachments/assets/83a8bbb7-626c-4af1-bd4e-c23d3042eb1a)
+
 ---
 
 ## 🚀 Features
