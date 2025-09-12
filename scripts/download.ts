@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 // version of socktainer to download
-const SOCKTAINER_VERSION = 'v0.0.1';
+const SOCKTAINER_VERSION = 'v0.1.0';
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
