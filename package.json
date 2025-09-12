@@ -2,7 +2,7 @@
   "name": "apple-container",
   "displayName": "Apple container",
   "description": "List/Manage Apple containers on macOS",
-  "version": "0.0.1-next",
+  "version": "0.2.0-next",
   "icon": "icon.png",
   "publisher": "redhat",
   "license": "Apache-2.0",
