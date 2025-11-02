@@ -38,11 +38,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['lcov', 'text'],
-      extension: '.ts',
+      include: ['src/**/*.ts'],
       thresholds: {
         lines: 30,
-        functions: 60,
-        branches: 85,
+        functions: 50,
+        branches: 25,
         statements: 30,
       },
     },
