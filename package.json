@@ -34,7 +34,7 @@
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.1",
     "@podman-desktop/api": "^1.23.1",
-    "@types/node": "^22.19.1",
+    "@types/node": "^22.19.2",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
     "@vitest/coverage-v8": "^4.0.15",
