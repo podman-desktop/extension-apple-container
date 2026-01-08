@@ -55,8 +55,8 @@ importers:
         specifier: ^10.4.23
         version: 10.4.23(postcss@8.5.6)
       commitlint:
-        specifier: ^20.2.0
-        version: 20.2.0(@types/node@24.10.4)(typescript@5.9.3)
+        specifier: ^20.3.0
+        version: 20.3.0(@types/node@24.10.4)(typescript@5.9.3)
       concurrently:
         specifier: ^9.2.1
         version: 9.2.1
@@ -1393,8 +1393,8 @@ packages:
     resolution: {integrity: sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ==}
     engines: {node: '>=20'}
 
-  commitlint@20.2.0:
-    resolution: {integrity: sha512-AxjKCK4PVgd3RD9MzW3nSVR6DfJPXqRi2n9Gkyq1tPrJNxq0WWqLBhHKOcwXvVCMJjameyeALV2xbYYDHlL5fg==}
+  commitlint@20.3.0:
+    resolution: {integrity: sha512-TaGMjgqJrqAZK0wfWwnZxGvAUkWBvrj79lK3H8CT2+jMrd5lHf3fRb4usDWa5qcaXUvEdzVG6PAesRVuIYXr5w==}
     engines: {node: '>=v18'}
     hasBin: true
 
@@ -4096,7 +4096,7 @@ snapshots:
 
   commander@14.0.2: {}
 
-  commitlint@20.2.0(@types/node@24.10.4)(typescript@5.9.3):
+  commitlint@20.3.0(@types/node@24.10.4)(typescript@5.9.3):
     dependencies:
       '@commitlint/cli': 20.3.0(@types/node@24.10.4)(typescript@5.9.3)
       '@commitlint/types': 20.2.0
