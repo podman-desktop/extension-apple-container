@@ -55,8 +55,8 @@ importers:
         specifier: ^10.4.27
         version: 10.4.27(postcss@8.5.6)
       commitlint:
-        specifier: ^20.4.2
-        version: 20.4.2(@types/node@24.10.4)(typescript@5.9.3)
+        specifier: ^20.4.3
+        version: 20.4.3(@types/node@24.10.4)(typescript@5.9.3)
       concurrently:
         specifier: ^9.2.1
         version: 9.2.1
@@ -258,10 +258,6 @@ packages:
 
   '@commitlint/top-level@20.4.3':
     resolution: {integrity: sha512-qD9xfP6dFg5jQ3NMrOhG0/w5y3bBUsVGyJvXxdWEwBm8hyx4WOk3kKXw28T5czBYvyeCVJgJJ6aoJZUWDpaacQ==}
-    engines: {node: '>=v18'}
-
-  '@commitlint/types@20.4.0':
-    resolution: {integrity: sha512-aO5l99BQJ0X34ft8b0h7QFkQlqxC6e7ZPVmBKz13xM9O8obDaM1Cld4sQlJDXXU/VFuUzQ30mVtHjVz74TuStw==}
     engines: {node: '>=v18'}
 
   '@commitlint/types@20.4.3':
@@ -1393,8 +1389,8 @@ packages:
     resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
     engines: {node: '>=20'}
 
-  commitlint@20.4.2:
-    resolution: {integrity: sha512-y11c0fuclx7vsP3Onm+sUdjrq4FuKhpFCxG7pW1yWNLMKcTq356Cji6Js+dQ0DU8lSwPm26FURjtcd/G77lDTQ==}
+  commitlint@20.4.3:
+    resolution: {integrity: sha512-qW5IAj7fMnW4HlVE4SIz46cLUucpLEyU7uJzSmVAZlCnoVBsSYddTCkf5dgboqJ1vvGm7XY/mBKXrBWzBh15Dg==}
     engines: {node: '>=v18'}
     hasBin: true
 
@@ -1416,11 +1412,6 @@ packages:
   conventional-changelog-conventionalcommits@9.2.0:
     resolution: {integrity: sha512-fCf+ODjseueTV09wVBoC0HXLi3OyuBJ+HfE3L63Khxqnr99f9nUcnQh3a15lCWHlGLihyZShW/mVVkBagr9JvQ==}
     engines: {node: '>=18'}
-
-  conventional-commits-parser@6.2.1:
-    resolution: {integrity: sha512-20pyHgnO40rvfI0NGF/xiEoFMkXDtkF8FwHvk5BokoFoCuTQRI8vrNCNFWUOfuolKJMm1tPCHc8GgYEtr1XRNA==}
-    engines: {node: '>=18'}
-    hasBin: true
 
   conventional-commits-parser@6.3.0:
     resolution: {integrity: sha512-RfOq/Cqy9xV9bOA8N+ZH6DlrDR+5S3Mi0B5kACEjESpE+AviIpAptx9a9cFpWCCvgRtWT+0BbUw+e1BZfts9jg==}
@@ -3061,11 +3052,6 @@ snapshots:
     dependencies:
       escalade: 3.2.0
 
-  '@commitlint/types@20.4.0':
-    dependencies:
-      conventional-commits-parser: 6.2.1
-      picocolors: 1.1.1
-
   '@commitlint/types@20.4.3':
     dependencies:
       conventional-commits-parser: 6.3.0
@@ -4058,10 +4044,10 @@ snapshots:
 
   commander@14.0.3: {}
 
-  commitlint@20.4.2(@types/node@24.10.4)(typescript@5.9.3):
+  commitlint@20.4.3(@types/node@24.10.4)(typescript@5.9.3):
     dependencies:
       '@commitlint/cli': 20.4.3(@types/node@24.10.4)(typescript@5.9.3)
-      '@commitlint/types': 20.4.0
+      '@commitlint/types': 20.4.3
     transitivePeerDependencies:
       - '@types/node'
       - typescript
@@ -4089,10 +4075,6 @@ snapshots:
   conventional-changelog-conventionalcommits@9.2.0:
     dependencies:
       compare-func: 2.0.0
-
-  conventional-commits-parser@6.2.1:
-    dependencies:
-      meow: 13.2.0
 
   conventional-commits-parser@6.3.0:
     dependencies:
