@@ -33,7 +33,7 @@
     "@eslint/compat": "^2.0.3",
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
-    "@podman-desktop/api": "^1.25.1",
+    "@podman-desktop/api": "^1.26.1",
     "@types/node": "^24.10.4",
     "@typescript-eslint/eslint-plugin": "^8.57.2",
     "@typescript-eslint/parser": "^8.57.2",
