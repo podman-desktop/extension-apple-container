@@ -68,7 +68,7 @@ jobs:
         # publish codecov report if linux
       - name: publish codecov report
         if: ${{ matrix.os=='ubuntu-24.04' }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
