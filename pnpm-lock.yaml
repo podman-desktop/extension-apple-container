@@ -35,8 +35,8 @@ importers:
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.1.0(jiti@2.6.1))
       '@podman-desktop/api':
-        specifier: ^1.26.1
-        version: 1.26.1
+        specifier: ^1.26.2
+        version: 1.26.2
       '@types/node':
         specifier: ^24.10.4
         version: 24.10.4
@@ -721,8 +721,8 @@ packages:
     peerDependencies:
       typescript: ^3 || ^4 || ^5
 
-  '@podman-desktop/api@1.26.1':
-    resolution: {integrity: sha512-mp6+UgOY/lzAy6ieeyWL9xPEdYiYEig5a5vLbmDFZu7/y/uihvxUQQ75VGZQeq37I2xpDztll95fY/NdypoZ1w==}
+  '@podman-desktop/api@1.26.2':
+    resolution: {integrity: sha512-LE8uo8PsyUG7gfrg0IW/Eib6SeZn717usJSwiuzpDMTSZJCTwlaXDeEADxMXLfsu6V9OKjZtgwJ7SAVzaeTV7A==}
 
   '@rollup/rollup-android-arm-eabi@4.55.1':
     resolution: {integrity: sha512-9R0DM/ykwfGIlNu6+2U09ga0WXeZ9MRC2Ter8jnz8415VbuIykVuc6bhdrbORFZANDmTDvq26mJrEVTl8TdnDg==}
@@ -3344,7 +3344,7 @@ snapshots:
       esquery: 1.7.0
       typescript: 5.9.3
 
-  '@podman-desktop/api@1.26.1': {}
+  '@podman-desktop/api@1.26.2': {}
 
   '@rollup/rollup-android-arm-eabi@4.55.1':
     optional: true
