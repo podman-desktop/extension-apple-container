@@ -18,12 +18,11 @@
 
 import { join } from 'node:path';
 import { builtinModules } from 'node:module';
-import type { UserConfig } from 'vite';
 import { defineConfig } from 'vite';
 
-const PACKAGE_ROOT = __dirname;
+const PACKAGE_ROOT = import.meta.dirname;
 
-const config: UserConfig = defineConfig({
+const config = defineConfig({
   mode: process.env.MODE,
   root: PACKAGE_ROOT,
   envDir: process.cwd(),
@@ -32,17 +31,23 @@ const config: UserConfig = defineConfig({
       '/@/': `${join(PACKAGE_ROOT, 'src')}/`,
     },
   },
+  oxc: {
+    decorator: {
+      legacy: true,
+      emitDecoratorMetadata: true,
+    },
+  },
   build: {
     sourcemap: 'inline',
     target: 'esnext',
     outDir: 'dist',
     assetsDir: '.',
-    minify: process.env.MODE === 'production' ? 'esbuild' : false,
+    minify: process.env.MODE === 'production' ? 'oxc' : false,
     lib: {
       entry: 'src/main.ts',
       formats: ['cjs'],
     },
-    rollupOptions: {
+    rolldownOptions: {
       external: ['@podman-desktop/api', ...builtinModules.flatMap(p => [p, `node:${p}`])],
       output: {
         entryFileNames: '[name].cjs',
