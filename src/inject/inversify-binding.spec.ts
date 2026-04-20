@@ -29,8 +29,18 @@ let inversifyBinding: InversifyBinding;
 const extensionContextMock = {} as ExtensionContext;
 const telemetryLoggerMock = {} as TelemetryLogger;
 
-// Mock inversify
-vi.mock(import('inversify'));
+vi.mock(import('inversify'), async importOriginal => {
+  const actual = await importOriginal();
+  const MockContainer = vi.fn();
+  MockContainer.prototype.bind = vi.fn();
+  MockContainer.prototype.load = vi.fn();
+  MockContainer.prototype.getAsync = vi.fn();
+  MockContainer.prototype.unbindAll = vi.fn();
+  return {
+    ...actual,
+    Container: MockContainer,
+  };
+});
 
 describe('inversifyBinding', () => {
   beforeEach(() => {

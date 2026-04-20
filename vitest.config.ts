@@ -22,8 +22,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   resolve: {
     alias: {
-      '/@/': `${join(__dirname, 'src')}/`,
-      '@podman-desktop/api': resolve(__dirname, '__mocks__/@podman-desktop/api.js'),
+      '/@/': `${join(import.meta.dirname, 'src')}/`,
+      '@podman-desktop/api': resolve(import.meta.dirname, '__mocks__/@podman-desktop/api.js'),
     },
   },
   test: {
