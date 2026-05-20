@@ -1,5 +1,7 @@
 {
   "name": "apple-container",
+  "repository": "https://github.com/podman-desktop/extension-apple-container",
+  "homepage": "https://github.com/podman-desktop/extension-apple-container#readme",
   "displayName": "Apple container",
   "description": "List/Manage Apple containers on macOS",
   "version": "0.2.0-next",
