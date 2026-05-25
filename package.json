@@ -40,7 +40,7 @@
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "@vitest/coverage-v8": "^4.1.7",
-    "@vitest/eslint-plugin": "^1.6.17",
+    "@vitest/eslint-plugin": "^1.6.18",
     "adm-zip": "^0.5.17",
     "autoprefixer": "^10.5.0",
     "commitlint": "^20.5.3",
