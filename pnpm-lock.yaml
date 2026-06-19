@@ -99,8 +99,8 @@ importers:
         specifier: ^13.0.0
         version: 13.0.0(eslint@10.5.0(jiti@2.6.1))
       eslint-plugin-sonarjs:
-        specifier: ^4.0.3
-        version: 4.0.3(eslint@10.5.0(jiti@2.6.1))
+        specifier: ^4.1.0
+        version: 4.1.0(eslint@10.5.0(jiti@2.6.1))
       eslint-plugin-unicorn:
         specifier: ^66.0.0
         version: 66.0.0(eslint@10.5.0(jiti@2.6.1))
@@ -1501,8 +1501,8 @@ packages:
     peerDependencies:
       eslint: '>=5.0.0'
 
-  eslint-plugin-sonarjs@4.0.3:
-    resolution: {integrity: sha512-5drkJKLC9qQddIiaATV0e8+ygbUc7b0Ti6VB7M2d3jmKNh3X0RaiIJYTs3dr9xnlhlrxo+/s1FoO3Jgv6O/c7g==}
+  eslint-plugin-sonarjs@4.1.0:
+    resolution: {integrity: sha512-rh+FlVz0yfd2RNIb6WqSkuGh0addX/Qi5scwQ5FphXDFrM6fZKcxP1+attJ78yUKcyYfiu6MTaISPpAFPzqRJw==}
     peerDependencies:
       eslint: ^8.0.0 || ^9.0.0 || ^10.0.0
 
@@ -2337,11 +2337,6 @@ packages:
 
   semver@6.3.1:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
-    hasBin: true
-
-  semver@7.7.4:
-    resolution: {integrity: sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA==}
-    engines: {node: '>=10'}
     hasBin: true
 
   semver@7.8.4:
@@ -4182,7 +4177,7 @@ snapshots:
     dependencies:
       eslint: 10.5.0(jiti@2.6.1)
 
-  eslint-plugin-sonarjs@4.0.3(eslint@10.5.0(jiti@2.6.1)):
+  eslint-plugin-sonarjs@4.1.0(eslint@10.5.0(jiti@2.6.1)):
     dependencies:
       '@eslint-community/regexpp': 4.12.2
       builtin-modules: 3.3.0
@@ -4194,9 +4189,10 @@ snapshots:
       lodash.merge: 4.6.2
       minimatch: 10.2.5
       scslre: 0.3.0
-      semver: 7.7.4
+      semver: 7.8.4
       ts-api-utils: 2.5.0(typescript@5.9.3)
       typescript: 5.9.3
+      yaml: 2.9.0
 
   eslint-plugin-unicorn@66.0.0(eslint@10.5.0(jiti@2.6.1)):
     dependencies:
@@ -5045,8 +5041,6 @@ snapshots:
 
   semver@6.3.1: {}
 
-  semver@7.7.4: {}
-
   semver@7.8.4: {}
 
   set-function-length@1.2.2:
@@ -5467,8 +5461,7 @@ snapshots:
 
   y18n@5.0.8: {}
 
-  yaml@2.9.0:
-    optional: true
+  yaml@2.9.0: {}
 
   yargs-parser@21.1.1: {}
 
