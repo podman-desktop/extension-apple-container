@@ -69,8 +69,8 @@ importers:
         specifier: ^10.5.2
         version: 10.5.2(postcss@8.5.16)
       commitlint:
-        specifier: ^21.2.0
-        version: 21.2.0(@types/node@24.13.3)(conventional-commits-parser@7.0.1)(typescript@5.9.3)
+        specifier: ^21.2.1
+        version: 21.2.1(@types/node@24.13.3)(conventional-commits-parser@7.0.1)(typescript@5.9.3)
       concurrently:
         specifier: ^10.0.3
         version: 10.0.3
@@ -1274,8 +1274,8 @@ packages:
   color-name@1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
 
-  commitlint@21.2.0:
-    resolution: {integrity: sha512-MCxw4QenpFaWXatU9abColk3M/8iWk055aeXTY5bS99NYOC23k3GAp6f57KXAB0P/s3R9hJjXLn5Cw2bPRO9Ow==}
+  commitlint@21.2.1:
+    resolution: {integrity: sha512-Ki6U66eL6wXsZf/is2qCs/6W2fNeF/WL2GSiacnuf2wwmCPapjtOoUvwfwMoqUAwosKbJfXVwr2iLnV08J7JmA==}
     engines: {node: '>=22.12.0'}
     hasBin: true
 
@@ -3911,7 +3911,7 @@ snapshots:
 
   color-name@1.1.4: {}
 
-  commitlint@21.2.0(@types/node@24.13.3)(conventional-commits-parser@7.0.1)(typescript@5.9.3):
+  commitlint@21.2.1(@types/node@24.13.3)(conventional-commits-parser@7.0.1)(typescript@5.9.3):
     dependencies:
       '@commitlint/cli': 21.2.1(@types/node@24.13.3)(conventional-commits-parser@7.0.1)(typescript@5.9.3)
       '@commitlint/types': 21.2.0
