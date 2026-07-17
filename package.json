@@ -26,7 +26,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "inversify": "^7.11.0"
+    "inversify": "^8.2.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
