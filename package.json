@@ -57,7 +57,7 @@
     "eslint-plugin-unicorn": "^69.0.0",
     "globals": "^17.7.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.1.0",
+    "lint-staged": "^17.1.1",
     "tsx": "^4.23.1",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.65.0",
