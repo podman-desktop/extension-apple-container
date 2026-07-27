@@ -86,7 +86,7 @@ jobs:
 
       - name: publish builder to ghcr.io
         id: push-to-ghcr
-        uses: redhat-actions/push-to-registry@v2
+        uses: redhat-actions/push-to-registry@v3
         with:
           image: ${{ steps.builder-image.outputs.image }}
           tags: ${{ steps.builder-image.outputs.tags }}
@@ -137,7 +137,7 @@ jobs:
 
       - name: publish extension to ghcr.io
         id: push-to-ghcr
-        uses: redhat-actions/push-to-registry@v2
+        uses: redhat-actions/push-to-registry@v3
         with:
           image: ${{ steps.extension-image.outputs.image }}
           tags: ${{ steps.extension-image.outputs.tags }}
