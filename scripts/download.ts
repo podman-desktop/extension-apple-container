@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 // version of socktainer to download
-const SOCKTAINER_VERSION = 'v0.1.0';
+const SOCKTAINER_VERSION = "v1.0.0";
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -29,7 +29,7 @@ import AdmZip from 'adm-zip';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const downloadUrl = `https://github.com/benoitf/socktainer/releases/download/${SOCKTAINER_VERSION}/socktainer.zip`;
+const downloadUrl = `https://github.com/socktainer/socktainer/releases/download/${SOCKTAINER_VERSION}/socktainer.zip`;
 
 const outputDir = path.resolve(__dirname, '..', 'dist', 'bin');
 const downloadedZipFile = path.join(outputDir, 'socktainer.zip');
