@@ -110,59 +110,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
 
 
-  builder-image:
-    needs: tag
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.tag.outputs.githubTag }}
-
-      - name: Install qemu dependency
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-user-static
-
-      - name: build builder image
-        id: builder-image
-        uses: redhat-actions/buildah-build@v2
-        with:
-          image: extension-apple-container-builder
-          tags: latest ${{ needs.tag.outputs.extVersion }}
-          platforms: linux/amd64, linux/arm64
-          containerfiles: |
-            build/Containerfile.builder
-          context: .
-          oci: true
-
-      - name: Log in to ghcr.io
-        uses: redhat-actions/podman-login@v1
-        with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ghcr.io
-
-      - name: publish builder to ghcr.io
-        id: push-to-ghcr
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          image: ${{ steps.builder-image.outputs.image }}
-          tags: ${{ steps.builder-image.outputs.tags }}
-          registry: ghcr.io/${{ github.repository_owner }}
-
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v4
-        with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/extension-apple-container-builder
-          subject-digest: ${{ steps.push-to-ghcr.outputs.digest }}
-          push-to-registry: true
-
-
   extension-image:
     name: Build and publish extension OCI image
 
     runs-on: ubuntu-24.04
-    needs: [builder-image, tag]
+    needs: tag
 
     steps:
       - uses: actions/checkout@v7
@@ -209,7 +161,7 @@ jobs:
           push-to-registry: true
 
   release:
-    needs: [tag, builder-image, extension-image]
+    needs: [tag, extension-image]
     name: Release
     runs-on: ubuntu-24.04
     steps:
