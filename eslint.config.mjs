@@ -28,7 +28,6 @@ import unicorn from 'eslint-plugin-unicorn';
 import noNull from 'eslint-plugin-no-null';
 import sonarjs from 'eslint-plugin-sonarjs';
 import etc from 'eslint-plugin-etc';
-import redundantUndefined from 'eslint-plugin-redundant-undefined';
 import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import vitest from '@vitest/eslint-plugin';
 
@@ -72,7 +71,6 @@ export default [
       etc: fixupPluginRules(etc),
       import: fixupPluginRules(importPlugin),
       'no-null': fixupPluginRules(noNull),
-      'redundant-undefined': fixupPluginRules(redundantUndefined),
       'simple-import-sort': fixupPluginRules(simpleImportSort),
     },
     settings: {
@@ -156,7 +154,6 @@ export default [
       'import/no-duplicates': 'error',
       'import/first': 'error',
       'import/newline-after-import': 'error',
-      'redundant-undefined/redundant-undefined': 'error',
       'import/no-extraneous-dependencies': 'error',
       'vitest/consistent-test-filename': 'off',
       'vitest/no-hooks': 'off',
