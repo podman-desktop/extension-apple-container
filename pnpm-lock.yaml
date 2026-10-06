@@ -18,6 +18,7 @@ overrides:
   esbuild@>=0.17.0 <0.28.1: '>=0.28.1'
   js-yaml@^4: '>=4.3.1'
   js-yaml@^5: '>=5.3.0'
+  source-map-js@^1: ^1.2.2
 
 importers:
 
@@ -2438,10 +2439,6 @@ packages:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
     engines: {node: '>=8'}
 
-  source-map-js@1.2.1:
-    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
-    engines: {node: '>=0.10.0'}
-
   source-map-js@1.2.2:
     resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
@@ -3117,7 +3114,7 @@ snapshots:
   '@eslint/css-tree@4.1.0':
     dependencies:
       mdn-data: 2.34.0
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
 
   '@eslint/eslintrc@3.3.7(supports-color@10.2.2)':
     dependencies:
@@ -5162,8 +5159,6 @@ snapshots:
       side-channel-weakmap: 1.0.2
 
   slash@3.0.0: {}
-
-  source-map-js@1.2.1: {}
 
   source-map-js@1.2.2: {}
 
