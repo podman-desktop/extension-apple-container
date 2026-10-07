@@ -32,14 +32,12 @@ RUN pnpm install
 # downloads socktainer into dist/bin, must run before the build
 RUN pnpm download-dependencies
 RUN pnpm build
+RUN mkdir -p /opt/app-root/extension && \
+    cp -r dist package.json *.png LICENSE README.md /opt/app-root/extension/
 
 FROM scratch
 
-COPY --from=builder /opt/app-root/src/dist/ /extension/dist
-COPY --from=builder /opt/app-root/src/package.json /extension/
-COPY --from=builder /opt/app-root/src/*.png /extension/
-COPY --from=builder /opt/app-root/src/LICENSE /extension/
-COPY --from=builder /opt/app-root/src/README.md /extension/
+COPY --from=builder /opt/app-root/extension /extension
 
 LABEL org.opencontainers.image.title="Apple container extension" \
       org.opencontainers.image.description="Apple container extension" \
