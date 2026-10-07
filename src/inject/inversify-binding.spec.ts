@@ -33,9 +33,9 @@ vi.mock(import('inversify'), async importOriginal => {
   const actual = await importOriginal();
   const MockContainer = vi.fn();
   MockContainer.prototype.bind = vi.fn();
-  MockContainer.prototype.load = vi.fn();
+  MockContainer.prototype.loadAsync = vi.fn();
   MockContainer.prototype.getAsync = vi.fn();
-  MockContainer.prototype.unbindAll = vi.fn();
+  MockContainer.prototype.unbindAllAsync = vi.fn();
   return {
     ...actual,
     Container: MockContainer,
@@ -62,7 +62,7 @@ describe('inversifyBinding', () => {
     expect(vi.mocked(Container.prototype.bind)).toHaveBeenCalledWith(TelemetryLoggerSymbol);
 
     // Expect load of modules
-    expect(vi.mocked(Container.prototype.load)).toHaveBeenCalledWith(managersModule);
+    expect(vi.mocked(Container.prototype.loadAsync)).toHaveBeenCalledWith(managersModule);
   });
 
   it('should dispose of the container', async () => {
@@ -74,6 +74,6 @@ describe('inversifyBinding', () => {
     await inversifyBinding.dispose();
 
     // Instances gone
-    expect(container.unbindAll).toHaveBeenCalledWith();
+    expect(container.unbindAllAsync).toHaveBeenCalledWith();
   });
 });

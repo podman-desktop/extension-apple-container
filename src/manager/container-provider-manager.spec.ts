@@ -54,7 +54,7 @@ afterEach(async () => {
   // Clear all timers
   vi.clearAllTimers();
 
-  await container.unbindAll();
+  await container.unbindAllAsync();
 });
 
 describe('init/post construct', () => {
