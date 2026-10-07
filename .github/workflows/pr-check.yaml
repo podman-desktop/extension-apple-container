@@ -75,3 +75,13 @@ jobs:
       - name: Run build
         run: pnpm build
         timeout-minutes: 40
+
+  build-oci:
+    name: build oci image
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Build OCI
+        uses: podman-desktop/gh-extensions-actions/.github/actions/oci-build@3c89b3ea20c3262cb0f05894d0da4354d8c269a6 # v0.9.0
+        with:
+          ref: ${{ github.ref }}
+          containerfile: build/Containerfile
