@@ -70,7 +70,7 @@ export class ContainerProviderManager {
       status: 'unknown',
       images: {
         icon: './icon.png',
-        logo: './logo.png',
+        logo: './icon.png',
       },
     });
     this.extensionContext.subscriptions.push(appleProvider);
