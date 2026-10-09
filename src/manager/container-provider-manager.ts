@@ -168,6 +168,8 @@ export class ContainerProviderManager {
       console.error('Error checking container runtime status', error);
     }
     if (systemRunning) {
+      appleProvider.updateStatus('ready');
+
       // Apple container version changed since socktainer was started: restart the matching one
       if (this.#containerProviderConnection && this.#socktainerContainerVersion !== containerMinorVersion) {
         console.log(`Apple container version changed to ${containerMinorVersion}, restarting socktainer`);
@@ -180,7 +182,6 @@ export class ContainerProviderManager {
         return;
       }
 
-      appleProvider.updateStatus('ready');
       // Register also the socktainer
       // Start the socktainer process
       const socktainerBinPath = this.getSocktainerBinPath(containerMinorVersion);
