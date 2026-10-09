@@ -166,6 +166,18 @@ describe('updateContainerSystemStatus', () => {
     expect(errorSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('should add the Homebrew and default install folders to the PATH of the container CLI', async () => {
+    expect.assertions(1);
+
+    mockContainerVersion('1.4.2');
+
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(process.exec).toHaveBeenCalledWith('container', ['system', '--version'], {
+      env: { PATH: expect.stringMatching(/\/usr\/local\/bin:\/opt\/homebrew\/bin/) },
+    });
+  });
+
   it('should report an unsupported container version only once', async () => {
     expect.assertions(3);
 

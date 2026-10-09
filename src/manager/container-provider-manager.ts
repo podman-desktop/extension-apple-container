@@ -19,6 +19,7 @@
 import { inject, injectable } from 'inversify';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
+import { env } from 'node:process';
 import { ExtensionContextSymbol, TelemetryLoggerSymbol } from '/@/inject/symbol';
 import {
   type ProviderConnectionStatus,
@@ -43,6 +44,10 @@ import socktainerVersions from '../../socktainer-versions.json';
 @injectable()
 export class ContainerProviderManager {
   public static readonly PROVIDER_ID = 'apple-container';
+
+  // Apps launched from the macOS Finder/Dock don't inherit the shell PATH: add the usual install folders
+  // (official installer: /usr/local/bin, Homebrew: /opt/homebrew/bin, MacPorts: /opt/local/bin)
+  static readonly MACOS_EXTRA_PATH = '/usr/local/bin:/opt/homebrew/bin:/opt/local/bin';
 
   @inject(ExtensionContextSymbol)
   private readonly extensionContext: ExtensionContext;
@@ -126,6 +131,11 @@ export class ContainerProviderManager {
     }
   }
 
+  protected getInstallationPath(): string {
+    const extraPath = ContainerProviderManager.MACOS_EXTRA_PATH;
+    return env.PATH ? `${env.PATH}:${extraPath}` : extraPath;
+  }
+
   async updateContainerSystemStatus(appleProvider: Provider): Promise<void> {
     // Check if apple container runtime is installed and running
     // Launch container system --version
@@ -136,7 +146,9 @@ export class ContainerProviderManager {
     let containerMinorVersion: string | undefined;
     const telemetryProperties: Record<string, string | TelemetryTrustedValue> = {};
     try {
-      const { stdout } = await process.exec('container', ['system', '--version']);
+      const { stdout } = await process.exec('container', ['system', '--version'], {
+        env: { PATH: this.getInstallationPath() },
+      });
       telemetryProperties.version = stdout.trim();
       // E.g. 'container CLI version 1.5.0 (build: release, commit: d265d66)' -> '1.5'
       containerMinorVersion = /version (\d+\.\d+)\./.exec(stdout)?.[1];
@@ -172,7 +184,7 @@ export class ContainerProviderManager {
     // Launch the command 'container runtime status' and check if there is an error
     let systemRunning = false;
     try {
-      await process.exec('container', ['system', 'status']);
+      await process.exec('container', ['system', 'status'], { env: { PATH: this.getInstallationPath() } });
       systemRunning = true;
     } catch (error: unknown) {
       this.logOnStatusChange(previousStatus, 'stopped', 'Error checking container runtime status', error);
