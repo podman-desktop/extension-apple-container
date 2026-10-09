@@ -138,6 +138,34 @@ describe('updateContainerSystemStatus', () => {
     expect(providerMock.updateStatus).toHaveBeenLastCalledWith('ready');
   });
 
+  it('should report not-installed when the container CLI is missing', async () => {
+    expect.assertions(1);
+
+    vi.mocked(process.exec).mockRejectedValue(new Error('not found'));
+
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(providerMock.updateStatus).toHaveBeenLastCalledWith('not-installed');
+  });
+
+  it('should log a missing container CLI only once', async () => {
+    expect.assertions(1);
+
+    const statefulProvider = {
+      status: 'unknown',
+      updateStatus: vi.fn<Provider['updateStatus']>(function (this: { status: string }, status) {
+        this.status = status;
+      }),
+    } as unknown as Provider;
+    vi.mocked(process.exec).mockRejectedValue(new Error('not found'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await containerProviderManager.updateContainerSystemStatus(statefulProvider);
+    await containerProviderManager.updateContainerSystemStatus(statefulProvider);
+
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('should report an unsupported container version only once', async () => {
     expect.assertions(3);
 

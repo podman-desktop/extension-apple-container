@@ -22,6 +22,7 @@ import { resolve } from 'node:path';
 import { ExtensionContextSymbol, TelemetryLoggerSymbol } from '/@/inject/symbol';
 import {
   type ProviderConnectionStatus,
+  type ProviderStatus,
   type ExtensionContext,
   provider,
   process,
@@ -118,9 +119,18 @@ export class ContainerProviderManager {
     return resolve(__dirname, 'bin', containerMinorVersion, 'socktainer');
   }
 
+  // Avoid logging the same error on every poll: only log when the status is about to change
+  protected logOnStatusChange(previous: ProviderStatus, next: ProviderStatus, message: string, error: unknown): void {
+    if (previous !== next) {
+      console.error(message, error);
+    }
+  }
+
   async updateContainerSystemStatus(appleProvider: Provider): Promise<void> {
     // Check if apple container runtime is installed and running
     // Launch container system --version
+    // Only log errors on status transitions, not on every poll
+    const previousStatus = appleProvider.status;
 
     let systemInstalled = false;
     let containerMinorVersion: string | undefined;
@@ -132,13 +142,13 @@ export class ContainerProviderManager {
       containerMinorVersion = /version (\d+\.\d+)\./.exec(stdout)?.[1];
       systemInstalled = true;
     } catch (error: unknown) {
-      console.error('Error checking container system version', error);
+      this.logOnStatusChange(previousStatus, 'not-installed', 'Error checking container system version', error);
     }
 
     if (systemInstalled) {
       appleProvider.updateStatus('installed');
     } else {
-      appleProvider.updateStatus('unknown');
+      appleProvider.updateStatus('not-installed');
       // Unregister any existing connection if any
       await this.cleanupConnection();
       return;
@@ -165,7 +175,7 @@ export class ContainerProviderManager {
       await process.exec('/usr/local/bin/container', ['system', 'status']);
       systemRunning = true;
     } catch (error: unknown) {
-      console.error('Error checking container runtime status', error);
+      this.logOnStatusChange(previousStatus, 'stopped', 'Error checking container runtime status', error);
     }
     if (systemRunning) {
       appleProvider.updateStatus('ready');
