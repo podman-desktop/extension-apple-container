@@ -59,6 +59,9 @@ export class ContainerProviderManager {
 
   #unsupportedVersionReported = false;
 
+  // Apple container minor version the running socktainer was picked for
+  #socktainerContainerVersion: string | undefined;
+
   async registerContainerProvider(): Promise<void> {
     this.#stopMonitoringStatus = false;
     const appleProvider = provider.createProvider({
@@ -105,6 +108,14 @@ export class ContainerProviderManager {
     this.#containerProviderConnection = undefined;
     this.#socktainerProcess?.kill();
     this.#socktainerProcess = undefined;
+  }
+
+  // Use folder from dist folder
+  protected getSocktainerBinPath(containerMinorVersion: string): string {
+    if (import.meta.env.DEV) {
+      return resolve(__dirname, '..', 'dist', 'bin', containerMinorVersion, 'socktainer');
+    }
+    return resolve(__dirname, 'bin', containerMinorVersion, 'socktainer');
   }
 
   async updateContainerSystemStatus(appleProvider: Provider): Promise<void> {
@@ -157,6 +168,12 @@ export class ContainerProviderManager {
       console.error('Error checking container runtime status', error);
     }
     if (systemRunning) {
+      // Apple container version changed since socktainer was started: restart the matching one
+      if (this.#containerProviderConnection && this.#socktainerContainerVersion !== containerMinorVersion) {
+        console.log(`Apple container version changed to ${containerMinorVersion}, restarting socktainer`);
+        await this.cleanupConnection();
+      }
+
       // Is it already started?
       if (this.#containerProviderConnection) {
         console.log('container provider connection already started');
@@ -166,16 +183,11 @@ export class ContainerProviderManager {
       appleProvider.updateStatus('ready');
       // Register also the socktainer
       // Start the socktainer process
-      // Use folder from dist folder
-      let socktainerBinPath: string;
-      if (import.meta.env.DEV) {
-        socktainerBinPath = resolve(__dirname, '..', 'dist', 'bin', containerMinorVersion, 'socktainer');
-      } else {
-        socktainerBinPath = resolve(__dirname, 'bin', containerMinorVersion, 'socktainer');
-      }
+      const socktainerBinPath = this.getSocktainerBinPath(containerMinorVersion);
       console.log('Starting socktainer from path', socktainerBinPath);
 
       this.#socktainerProcess = spawn(socktainerBinPath);
+      this.#socktainerContainerVersion = containerMinorVersion;
       this.#socktainerProcess.stdout?.on('data', data => {
         console.log(`socktainer: ${data}`);
       });

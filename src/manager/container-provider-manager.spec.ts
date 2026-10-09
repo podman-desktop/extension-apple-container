@@ -107,6 +107,26 @@ describe('updateContainerSystemStatus', () => {
     expect(spawn).toHaveBeenCalledWith('/ext/bin/1.4/socktainer');
   });
 
+  it('should restart socktainer when the container minor version changes', async () => {
+    expect.assertions(3);
+
+    const firstProcess = {
+      on: vi.fn<ChildProcess['on']>(),
+      kill: vi.fn<ChildProcess['kill']>(),
+    } as unknown as ChildProcess;
+    vi.mocked(spawn).mockReturnValueOnce(firstProcess);
+    vi.mocked(resolve).mockImplementation((...paths: string[]) => paths.join('/'));
+
+    mockContainerVersion('1.4.2');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    mockContainerVersion('1.5.0');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(firstProcess.kill).toHaveBeenCalledExactlyOnceWith();
+    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(spawn).toHaveBeenLastCalledWith(expect.stringContaining('/1.5/socktainer'));
+  });
+
   it('should report an unsupported container version only once', async () => {
     expect.assertions(3);
 
