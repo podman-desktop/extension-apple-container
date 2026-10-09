@@ -18,10 +18,20 @@
 import { afterEach, beforeEach, describe, expect, vi, it } from 'vitest';
 import { Container } from 'inversify';
 import { ExtensionContextSymbol, TelemetryLoggerSymbol } from '../inject/symbol';
-import { type ExtensionContext, type TelemetryLogger, type TelemetryTrustedValue } from '@podman-desktop/api';
+import {
+  type ExtensionContext,
+  type Provider,
+  type TelemetryLogger,
+  type TelemetryTrustedValue,
+  process,
+  window,
+} from '@podman-desktop/api';
 import { ContainerProviderManager } from './container-provider-manager';
+import { resolve } from 'node:path';
+import { type ChildProcess, spawn } from 'node:child_process';
 
 vi.mock(import('node:path'));
+vi.mock(import('node:child_process'));
 vi.useFakeTimers();
 
 const telemetryLoggerMock = {
@@ -62,5 +72,51 @@ describe('init/post construct', () => {
     expect.assertions(1);
 
     expect(containerProviderManager).toBeInstanceOf(ContainerProviderManager);
+  });
+});
+
+describe('updateContainerSystemStatus', () => {
+  const providerMock = {
+    updateStatus: vi.fn<Provider['updateStatus']>(),
+    registerContainerProviderConnection: vi.fn<Provider['registerContainerProviderConnection']>(),
+  } as unknown as Provider;
+
+  beforeEach(() => {
+    vi.mocked(window.showErrorMessage).mockResolvedValue(undefined);
+    vi.mocked(spawn).mockReturnValue({ on: vi.fn<ChildProcess['on']>() } as unknown as ChildProcess);
+    vi.spyOn(containerProviderManager, 'timeout').mockResolvedValue();
+  });
+
+  function mockContainerVersion(version: string): void {
+    vi.mocked(process.exec).mockImplementation(async (_cmd, args) => ({
+      command: '',
+      stderr: '',
+      stdout: args?.[1] === '--version' ? `container CLI version ${version} (build: release, commit: d265d66)` : '',
+    }));
+  }
+
+  it('should launch the socktainer matching the container minor version', async () => {
+    expect.assertions(2);
+
+    mockContainerVersion('1.4.2');
+    vi.mocked(resolve).mockReturnValue('/ext/bin/1.4/socktainer');
+
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(resolve).toHaveBeenCalledWith(expect.anything(), '..', 'dist', 'bin', '1.4', 'socktainer');
+    expect(spawn).toHaveBeenCalledWith('/ext/bin/1.4/socktainer');
+  });
+
+  it('should report an unsupported container version only once', async () => {
+    expect.assertions(3);
+
+    mockContainerVersion('1.2.0');
+
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(providerMock.updateStatus).toHaveBeenLastCalledWith('error');
+    expect(spawn).not.toHaveBeenCalled();
+    expect(window.showErrorMessage).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('1.2.0'));
   });
 });

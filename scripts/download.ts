@@ -16,23 +16,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-// version of socktainer to download
-const SOCKTAINER_VERSION = 'v0.1.0';
-
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import AdmZip from 'adm-zip';
+// Apple container minor version -> socktainer version
+import socktainerVersions from '../socktainer-versions.json';
 
 // Fix __dirname and __filename in ES module scope
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const downloadUrl = `https://github.com/socktainer/socktainer/releases/download/${SOCKTAINER_VERSION}/socktainer.zip`;
-
-const outputDir = path.resolve(__dirname, '..', 'dist', 'bin');
-const downloadedZipFile = path.join(outputDir, 'socktainer.zip');
+const binDir = path.resolve(__dirname, '..', 'dist', 'bin');
 
 class Downloader {
   private async downloadFile(url: string, dest: string): Promise<void> {
@@ -68,7 +64,10 @@ class Downloader {
     zip.extractAllTo(targetDir, true);
   }
 
-  public async downloadAndExtract(): Promise<void> {
+  public async downloadAndExtract(version: string, outputDir: string): Promise<void> {
+    const downloadUrl = `https://github.com/socktainer/socktainer/releases/download/${version}/socktainer.zip`;
+    const downloadedZipFile = path.join(outputDir, 'socktainer.zip');
+
     if (!fs.existsSync(outputDir)) {
       await fs.promises.mkdir(outputDir, { recursive: true });
     }
@@ -92,5 +91,7 @@ class Downloader {
 
 (async () => {
   const downloader = new Downloader();
-  await downloader.downloadAndExtract();
+  for (const [containerVersion, socktainerVersion] of Object.entries(socktainerVersions)) {
+    await downloader.downloadAndExtract(socktainerVersion, path.join(binDir, containerVersion));
+  }
 })();

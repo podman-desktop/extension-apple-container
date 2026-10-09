@@ -30,8 +30,10 @@ import {
   Disposable,
   TelemetryLogger,
   TelemetryTrustedValue,
+  window,
 } from '@podman-desktop/api';
 import { ChildProcess, spawn } from 'node:child_process';
+import socktainerVersions from '../../socktainer-versions.json';
 
 /**
  * Manager for the authentication provider.
@@ -54,6 +56,8 @@ export class ContainerProviderManager {
   #containerProviderConnection: ContainerProviderConnection | undefined;
 
   #stopMonitoringStatus = false;
+
+  #unsupportedVersionReported = false;
 
   async registerContainerProvider(): Promise<void> {
     this.#stopMonitoringStatus = false;
@@ -108,10 +112,13 @@ export class ContainerProviderManager {
     // Launch container system --version
 
     let systemInstalled = false;
+    let containerMinorVersion: string | undefined;
     const telemetryProperties: Record<string, string | TelemetryTrustedValue> = {};
     try {
       const { stdout } = await process.exec('/usr/local/bin/container', ['system', '--version']);
       telemetryProperties.version = stdout.trim();
+      // E.g. 'container CLI version 1.5.0 (build: release, commit: d265d66)' -> '1.5'
+      containerMinorVersion = /version (\d+\.\d+)\./.exec(stdout)?.[1];
       systemInstalled = true;
     } catch (error: unknown) {
       console.error('Error checking container system version', error);
@@ -125,6 +132,21 @@ export class ContainerProviderManager {
       await this.cleanupConnection();
       return;
     }
+
+    if (!containerMinorVersion || !Object.hasOwn(socktainerVersions, containerMinorVersion)) {
+      const message = `Apple container version '${telemetryProperties.version}' is not supported. Supported versions: ${Object.keys(socktainerVersions).join(', ')}.`;
+      console.error(message);
+      appleProvider.updateStatus('error');
+      await this.cleanupConnection();
+      if (!this.#unsupportedVersionReported) {
+        this.#unsupportedVersionReported = true;
+        window.showErrorMessage(message).catch(console.error);
+      }
+      return;
+    }
+    this.#unsupportedVersionReported = false;
+    telemetryProperties.socktainerVersion =
+      socktainerVersions[containerMinorVersion as keyof typeof socktainerVersions];
 
     // Launch the command 'container runtime status' and check if there is an error
     let systemRunning = false;
@@ -147,9 +169,9 @@ export class ContainerProviderManager {
       // Use folder from dist folder
       let socktainerBinPath: string;
       if (import.meta.env.DEV) {
-        socktainerBinPath = resolve(__dirname, '..', 'dist', 'bin', 'socktainer');
+        socktainerBinPath = resolve(__dirname, '..', 'dist', 'bin', containerMinorVersion, 'socktainer');
       } else {
-        socktainerBinPath = resolve(__dirname, 'bin', 'socktainer');
+        socktainerBinPath = resolve(__dirname, 'bin', containerMinorVersion, 'socktainer');
       }
       console.log('Starting socktainer from path', socktainerBinPath);
 
