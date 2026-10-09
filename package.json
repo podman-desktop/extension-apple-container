@@ -15,6 +15,7 @@
   "main": "./dist/main.cjs",
   "scripts": {
     "download-dependencies": "tsx ./scripts/download.ts",
+    "update-socktainer-versions": "tsx ./scripts/update-socktainer-versions.ts",
     "build": "vite build",
     "test": "vitest run --coverage",
     "test:watch": "vitest watch --coverage",
