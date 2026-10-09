@@ -127,6 +127,17 @@ describe('updateContainerSystemStatus', () => {
     expect(spawn).toHaveBeenLastCalledWith(expect.stringContaining('/1.5/socktainer'));
   });
 
+  it('should keep the ready status once socktainer is already started', async () => {
+    expect.assertions(1);
+
+    mockContainerVersion('1.4.2');
+
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(providerMock.updateStatus).toHaveBeenLastCalledWith('ready');
+  });
+
   it('should report an unsupported container version only once', async () => {
     expect.assertions(3);
 
