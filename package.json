@@ -4,7 +4,7 @@
   "homepage": "https://github.com/podman-desktop/extension-apple-container#readme",
   "displayName": "Apple container",
   "description": "List/Manage Apple containers on macOS",
-  "version": "0.2.0-next",
+  "version": "0.3.0-next",
   "icon": "icon.png",
   "publisher": "podman-desktop",
   "license": "Apache-2.0",
