@@ -136,7 +136,7 @@ export class ContainerProviderManager {
     let containerMinorVersion: string | undefined;
     const telemetryProperties: Record<string, string | TelemetryTrustedValue> = {};
     try {
-      const { stdout } = await process.exec('/usr/local/bin/container', ['system', '--version']);
+      const { stdout } = await process.exec('container', ['system', '--version']);
       telemetryProperties.version = stdout.trim();
       // E.g. 'container CLI version 1.5.0 (build: release, commit: d265d66)' -> '1.5'
       containerMinorVersion = /version (\d+\.\d+)\./.exec(stdout)?.[1];
@@ -172,7 +172,7 @@ export class ContainerProviderManager {
     // Launch the command 'container runtime status' and check if there is an error
     let systemRunning = false;
     try {
-      await process.exec('/usr/local/bin/container', ['system', 'status']);
+      await process.exec('container', ['system', 'status']);
       systemRunning = true;
     } catch (error: unknown) {
       this.logOnStatusChange(previousStatus, 'stopped', 'Error checking container runtime status', error);
