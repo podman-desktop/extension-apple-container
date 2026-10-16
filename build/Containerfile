@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2025 Red Hat, Inc.
+# Copyright (C) 2025-2026 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,4 +42,5 @@ COPY --from=builder /opt/app-root/extension /extension
 LABEL org.opencontainers.image.title="Apple container extension" \
       org.opencontainers.image.description="Apple container extension" \
       org.opencontainers.image.vendor="podman-desktop" \
-      io.podman-desktop.api.version=">= 1.21.0"
+      io.podman-desktop.api.version=">= 1.21.0" \
+      io.podman-desktop.extension.platforms="darwin/arm64" 
