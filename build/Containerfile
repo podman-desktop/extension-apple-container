@@ -15,7 +15,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM registry.access.redhat.com/ubi10/nodejs-24-minimal:1792484284@sha256:b72dfa6ea6db8cd75a443d955016ed40596733f963d25fb1742cc7212b382e78 AS builder
+FROM registry.access.redhat.com/ubi10/nodejs-24-minimal:1792777528@sha256:c21f278ca9841f205811f98b6839d0bcd7f09470da31d3e7796f31a49df1b43b AS builder
 
 WORKDIR /opt/app-root/src
 
