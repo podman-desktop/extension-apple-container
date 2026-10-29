@@ -24,11 +24,13 @@ import {
   type TelemetryLogger,
   type TelemetryTrustedValue,
   process,
+  provider,
   window,
 } from '@podman-desktop/api';
 import { ContainerProviderManager } from './container-provider-manager';
 import { resolve } from 'node:path';
 import { type ChildProcess, spawn } from 'node:child_process';
+import socktainerVersions from '../../socktainer-versions.json';
 
 vi.mock(import('node:path'));
 vi.mock(import('node:child_process'));
@@ -72,6 +74,23 @@ describe('init/post construct', () => {
     expect.assertions(1);
 
     expect(containerProviderManager).toBeInstanceOf(ContainerProviderManager);
+  });
+});
+
+describe('registerContainerProvider', () => {
+  it('should describe how to get a connection when there is none', async () => {
+    expect.assertions(3);
+
+    vi.mocked(provider.createProvider).mockReturnValue({} as unknown as Provider);
+    vi.spyOn(containerProviderManager, 'monitorContainerSystemStatus').mockResolvedValue();
+
+    await containerProviderManager.registerContainerProvider();
+
+    const description = vi.mocked(provider.createProvider).mock.calls[0]?.[0].emptyConnectionMarkdownDescription;
+
+    expect(description).toContain(`supported versions: ${Object.keys(socktainerVersions).join(', ')}`);
+    expect(description).toContain('`container system start`');
+    expect(description).toContain('(https://github.com/podman-desktop/extension-apple-container#readme)');
   });
 });
 
