@@ -49,6 +49,13 @@ export class ContainerProviderManager {
   // (official installer: /usr/local/bin, Homebrew: /opt/homebrew/bin, MacPorts: /opt/local/bin)
   static readonly MACOS_EXTRA_PATH = '/usr/local/bin:/opt/homebrew/bin:/opt/local/bin';
 
+  // Displayed on the Resources page while no connection is registered
+  static readonly EMPTY_CONNECTION_DESCRIPTION = [
+    'Run and manage [Apple containers](https://github.com/apple/container) on macOS with Apple silicon.',
+    `Install the Apple container CLI (supported versions: ${Object.keys(socktainerVersions).join(', ')}) and start its system service with \`container system start\`: the Apple connection then appears here automatically.`,
+    'More information: [extension README](https://github.com/podman-desktop/extension-apple-container#readme)',
+  ].join('\n\n');
+
   @inject(ExtensionContextSymbol)
   private readonly extensionContext: ExtensionContext;
 
@@ -78,6 +85,7 @@ export class ContainerProviderManager {
         icon: './icon.png',
         logo: './icon.png',
       },
+      emptyConnectionMarkdownDescription: ContainerProviderManager.EMPTY_CONNECTION_DESCRIPTION,
     });
     this.extensionContext.subscriptions.push(appleProvider);
 
