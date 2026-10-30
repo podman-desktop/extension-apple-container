@@ -138,6 +138,78 @@ describe('updateContainerSystemStatus', () => {
     expect(providerMock.updateStatus).toHaveBeenLastCalledWith('ready');
   });
 
+  // Returns a function emitting an event to the listener registered on the spawned socktainer process
+  function mockSocktainerProcess(): (event: string, ...args: unknown[]) => void {
+    const on = vi.fn<ChildProcess['on']>();
+    vi.mocked(spawn).mockReturnValueOnce({ on, kill: vi.fn<ChildProcess['kill']>() } as unknown as ChildProcess);
+    return (event, ...args): void => {
+      const listener = on.mock.calls.find(([name]) => name === event)?.[1];
+      (listener as (...listenerArgs: unknown[]) => void)(...args);
+    };
+  }
+
+  it('should log socktainer spawn errors instead of leaving them unhandled', async () => {
+    expect.assertions(1);
+
+    mockContainerVersion('1.4.2');
+    const emitSocktainerEvent = mockSocktainerProcess();
+
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    const error = new Error('spawn socktainer ENOENT');
+    emitSocktainerEvent('error', error);
+
+    expect(console.error).toHaveBeenCalledWith('Error running socktainer', error);
+  });
+
+  it('should restart socktainer on the next check when it exited', async () => {
+    expect.assertions(3);
+
+    mockContainerVersion('1.4.2');
+    const connectionDisposable = { dispose: vi.fn<() => void>() };
+    vi.mocked(providerMock.registerContainerProviderConnection).mockReturnValue(connectionDisposable);
+    const emitSocktainerEvent = mockSocktainerProcess();
+
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    emitSocktainerEvent('close', 1);
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(connectionDisposable.dispose).toHaveBeenCalledExactlyOnceWith();
+    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(providerMock.registerContainerProviderConnection).toHaveBeenCalledTimes(2);
+  });
+
+  it('should keep the connection when a replaced socktainer exits', async () => {
+    expect.assertions(1);
+
+    const connectionDisposable = { dispose: vi.fn<() => void>() };
+    vi.mocked(providerMock.registerContainerProviderConnection).mockReturnValue(connectionDisposable);
+    const emitFirstSocktainerEvent = mockSocktainerProcess();
+    mockSocktainerProcess();
+
+    mockContainerVersion('1.4.2');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    mockContainerVersion('1.5.0');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    // The first socktainer was killed when the container version changed
+    emitFirstSocktainerEvent('close', 0);
+
+    expect(connectionDisposable.dispose).toHaveBeenCalledExactlyOnceWith();
+  });
+
+  it('should not register the connection when socktainer exits while starting', async () => {
+    expect.assertions(1);
+
+    mockContainerVersion('1.4.2');
+    const emitSocktainerEvent = mockSocktainerProcess();
+    vi.mocked(containerProviderManager.timeout).mockImplementation(async () => {
+      emitSocktainerEvent('close', 1);
+    });
+
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(providerMock.registerContainerProviderConnection).not.toHaveBeenCalled();
+  });
+
   it('should report not-installed when the container CLI is missing', async () => {
     expect.assertions(1);
 

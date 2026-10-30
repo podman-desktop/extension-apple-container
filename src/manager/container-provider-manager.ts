@@ -136,6 +136,62 @@ export class ContainerProviderManager {
     return env.PATH ? `${env.PATH}:${extraPath}` : extraPath;
   }
 
+  protected async startSocktainer(
+    appleProvider: Provider,
+    containerMinorVersion: string,
+    telemetryProperties: Record<string, string | TelemetryTrustedValue>,
+  ): Promise<void> {
+    // Start the socktainer process
+    const socktainerBinPath = this.getSocktainerBinPath(containerMinorVersion);
+    console.log('Starting socktainer from path', socktainerBinPath);
+
+    const socktainerProcess = spawn(socktainerBinPath);
+    this.#socktainerProcess = socktainerProcess;
+    this.#socktainerContainerVersion = containerMinorVersion;
+    socktainerProcess.stdout?.on('data', data => {
+      console.log(`socktainer: ${data}`);
+    });
+    socktainerProcess.stderr?.on('data', data => {
+      console.error(`socktainer error: ${data}`);
+    });
+    // Without a listener, a spawn failure (e.g. missing or non executable binary) is thrown as an uncaught exception
+    socktainerProcess.on('error', error => {
+      console.error('Error running socktainer', error);
+    });
+    socktainerProcess.on('close', code => {
+      console.log(`socktainer process exited with code ${code}`);
+      // The socktainer stopped on its own: drop its connection so that the next status check starts it again
+      if (this.#socktainerProcess === socktainerProcess) {
+        this.cleanupConnection().catch(console.error);
+      }
+    });
+
+    const homeDir = homedir();
+    const socketPath = resolve(homeDir, '.socktainer', 'container.sock');
+
+    let providerState: ProviderConnectionStatus = 'starting';
+
+    this.#containerProviderConnection = {
+      name: 'Apple',
+      type: 'docker',
+      status: (): ProviderConnectionStatus => providerState,
+      endpoint: {
+        socketPath,
+      },
+    };
+
+    // Wait a couple of seconds to let the socktainer start
+    await this.timeout(2000);
+    // The socktainer exited or the connection was cleaned up while waiting: don't register a dead connection
+    if (this.#socktainerProcess !== socktainerProcess) {
+      return;
+    }
+    providerState = 'started';
+    this.#connectionDisposable = appleProvider.registerContainerProviderConnection(this.#containerProviderConnection);
+    this.telemetryLogger.logUsage('registeredConnection', telemetryProperties);
+    this.extensionContext.subscriptions.push(this.#connectionDisposable);
+  }
+
   async updateContainerSystemStatus(appleProvider: Provider): Promise<void> {
     // Check if apple container runtime is installed and running
     // Launch container system --version
@@ -205,42 +261,7 @@ export class ContainerProviderManager {
       }
 
       // Register also the socktainer
-      // Start the socktainer process
-      const socktainerBinPath = this.getSocktainerBinPath(containerMinorVersion);
-      console.log('Starting socktainer from path', socktainerBinPath);
-
-      this.#socktainerProcess = spawn(socktainerBinPath);
-      this.#socktainerContainerVersion = containerMinorVersion;
-      this.#socktainerProcess.stdout?.on('data', data => {
-        console.log(`socktainer: ${data}`);
-      });
-      this.#socktainerProcess.stderr?.on('data', data => {
-        console.error(`socktainer error: ${data}`);
-      });
-      this.#socktainerProcess.on('close', code => {
-        console.log(`socktainer process exited with code ${code}`);
-      });
-
-      const homeDir = homedir();
-      const socketPath = resolve(homeDir, '.socktainer', 'container.sock');
-
-      let providerState: ProviderConnectionStatus = 'starting';
-
-      this.#containerProviderConnection = {
-        name: 'Apple',
-        type: 'docker',
-        status: (): ProviderConnectionStatus => providerState,
-        endpoint: {
-          socketPath,
-        },
-      };
-
-      // Wait a couple of seconds to let the socktainer start
-      await this.timeout(2000);
-      providerState = 'started';
-      this.#connectionDisposable = appleProvider.registerContainerProviderConnection(this.#containerProviderConnection);
-      this.telemetryLogger.logUsage('registeredConnection', telemetryProperties);
-      this.extensionContext.subscriptions.push(this.#connectionDisposable);
+      await this.startSocktainer(appleProvider, containerMinorVersion, telemetryProperties);
     } else {
       // Cleanup any existing connection
       await this.cleanupConnection();
