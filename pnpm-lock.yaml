@@ -207,6 +207,9 @@ importers:
       '@podman-desktop/api':
         specifier: ^1.30.5
         version: 1.30.5
+      '@podman-desktop/eslint-config':
+        specifier: ^0.1.0
+        version: 0.1.0(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
@@ -751,6 +754,11 @@ packages:
 
   '@podman-desktop/api@1.30.5':
     resolution: {integrity: sha512-diE/1A2XRLjBzGnfMBRikxDeuNEEOyE/NlRODDoiBH85tlEs8+CspjEkmoaam7pzS82ej36iV1WhAd07ixU4Rw==}
+
+  '@podman-desktop/eslint-config@0.1.0':
+    resolution: {integrity: sha512-u3AwhtAKSk8R4wJQRYl5iYzGSjUrZTwPtCN9tjaOiCyq5RsWW2UznBsRnZYtmnbO0sqOv0A6f9mcAh+/0AbGrw==}
+    peerDependencies:
+      eslint: '>=10'
 
   '@rolldown/binding-android-arm-eabi@1.2.15':
     resolution: {integrity: sha512-aLcgK9gIJ3YRvrrtfSBbRa27F5WrpiTaPulnFpsHPxpUHgFlSgnU4854MHwoRGEBhfRJDWCS2WQ7lIjskE9Olw==}
@@ -3125,6 +3133,10 @@ snapshots:
   '@oxc-project/types@0.155.0': {}
 
   '@podman-desktop/api@1.30.5': {}
+
+  '@podman-desktop/eslint-config@0.1.0(eslint@10.14.0(jiti@2.7.0)(supports-color@10.2.2))':
+    dependencies:
+      eslint: 10.14.0(jiti@2.7.0)(supports-color@10.2.2)
 
   '@rolldown/binding-android-arm-eabi@1.2.15':
     optional: true
