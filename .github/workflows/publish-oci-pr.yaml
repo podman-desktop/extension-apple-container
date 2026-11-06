@@ -20,7 +20,7 @@ name: publish-oci-pr
 on:
   workflow_run:
     workflows:
-      - 'pr-check'
+      - "pr-check"
     types:
       - completed
 
