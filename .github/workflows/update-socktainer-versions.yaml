@@ -23,7 +23,7 @@ permissions:
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: "0 3 * * *"
 
 jobs:
   update:
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Execute pnpm
         run: pnpm install --frozen-lockfile
@@ -56,8 +56,8 @@ jobs:
           token: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
           branch: update-socktainer-versions
           add-paths: socktainer-versions.json
-          commit-message: 'chore: update supported Apple container / socktainer versions'
-          title: 'chore: update supported Apple container / socktainer versions'
+          commit-message: "chore: update supported Apple container / socktainer versions"
+          title: "chore: update supported Apple container / socktainer versions"
           body: Update `socktainer-versions.json` to the latest patch of the last 3 Apple container minor versions and their socktainer counterpart.
           signoff: true
           delete-branch: true

@@ -11,6 +11,7 @@ A **Podman Desktop extension** to manage **Apple containers** on **macOS** (ARM6
 ---
 
 ## 🚀 Features
+
 - View and manage Apple containers directly in Podman Desktop
 - Designed specifically for macOS on ARM64
 - Easy installation and updates via Podman Desktop
@@ -19,11 +20,13 @@ A **Podman Desktop extension** to manage **Apple containers** on **macOS** (ARM6
 ---
 
 ## 🔍 How It Works
+
 This extension relies on **[Socktainer](https://github.com/socktainer/socktainer)**, a lightweight CLI/daemon that exposes a **REST API** to manage Apple containers. The API is designed to be **compatible with the Docker REST API**, enabling tools and extensions that expect Docker behavior to work with Apple containers without modification. Podman Desktop interacts with this API to provide a full-featured, user-friendly interface for container management on macOS ARM64.
 
 ---
 
 ## 📚 Topics
+
 - [Installation](#installation)
 - [Feedback](#feedback)
 
