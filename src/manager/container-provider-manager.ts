@@ -25,6 +25,7 @@ import {
   type ProviderConnectionStatus,
   type ProviderStatus,
   type ExtensionContext,
+  type Logger,
   provider,
   process,
   ContainerProviderConnection,
@@ -52,7 +53,7 @@ export class ContainerProviderManager {
   // Displayed on the Resources page while no connection is registered
   static readonly EMPTY_CONNECTION_DESCRIPTION = [
     'Run and manage [Apple containers](https://github.com/apple/container) on macOS with Apple silicon.',
-    `Install the Apple container CLI (supported versions: ${Object.keys(socktainerVersions).join(', ')}) and start its system service with \`container system start\`: the Apple connection then appears here automatically.`,
+    `Install the Apple container CLI (supported versions: ${Object.keys(socktainerVersions).join(', ')}): the Apple connection then appears here automatically, and its system service can be started from here or with \`container system start\`.`,
     'More information: [extension README](https://github.com/podman-desktop/extension-apple-container#readme)',
   ].join('\n\n');
 
@@ -66,7 +67,11 @@ export class ContainerProviderManager {
 
   #connectionDisposable: Disposable | undefined;
 
-  #containerProviderConnection: ContainerProviderConnection | undefined;
+  // Follows the Apple container system service: 'stopped' when it is not running, 'started' once socktainer serves it
+  #connectionStatus: ProviderConnectionStatus = 'stopped';
+
+  // Status checks and Start/Stop actions are chained so that they never run concurrently
+  #pendingStatusTask: Promise<void> = Promise.resolve();
 
   #stopMonitoringStatus = false;
 
@@ -96,9 +101,7 @@ export class ContainerProviderManager {
 
   async deactivate(): Promise<void> {
     this.#stopMonitoringStatus = true;
-    if (this.#socktainerProcess) {
-      await this.cleanupConnection();
-    }
+    await this.cleanupConnection();
   }
 
   async timeout(time: number): Promise<void> {
@@ -118,10 +121,76 @@ export class ContainerProviderManager {
     }
     this.#connectionDisposable = undefined;
 
-    // Kill process if any
-    this.#containerProviderConnection = undefined;
-    this.#socktainerProcess?.kill();
+    this.stopSocktainer();
+    this.#connectionStatus = 'stopped';
+  }
+
+  protected stopSocktainer(): void {
+    // Forget the process first so that its 'close' listener ignores this expected exit
+    const socktainerProcess = this.#socktainerProcess;
     this.#socktainerProcess = undefined;
+    this.#socktainerContainerVersion = undefined;
+    socktainerProcess?.kill();
+  }
+
+  // Run the task once the previous status check or Start/Stop action is done
+  protected queueStatusTask(task: () => Promise<void>): Promise<void> {
+    const result = this.#pendingStatusTask.then(task);
+    this.#pendingStatusTask = result.catch(() => {});
+    return result;
+  }
+
+  // Register the Apple connection once the container CLI is detected.
+  // It stays registered while the system service is stopped so that it can be started from the Resources page
+  protected registerConnection(appleProvider: Provider): void {
+    if (this.#connectionDisposable) {
+      return;
+    }
+    const connection: ContainerProviderConnection = {
+      name: 'Apple',
+      type: 'docker',
+      status: (): ProviderConnectionStatus => this.#connectionStatus,
+      endpoint: {
+        socketPath: resolve(homedir(), '.socktainer', 'container.sock'),
+      },
+      lifecycle: {
+        start: (_context, logger): Promise<void> => this.startContainerSystem(appleProvider, logger),
+        stop: (_context, logger): Promise<void> => this.stopContainerSystem(appleProvider, logger),
+      },
+    };
+    this.#connectionDisposable = appleProvider.registerContainerProviderConnection(connection);
+    this.extensionContext.subscriptions.push(this.#connectionDisposable);
+  }
+
+  async startContainerSystem(appleProvider: Provider, logger?: Logger): Promise<void> {
+    return this.queueStatusTask(async () => {
+      appleProvider.updateStatus('starting');
+      this.#connectionStatus = 'starting';
+      try {
+        // Install the default kernel on the first start instead of waiting for an answer to the interactive prompt
+        await process.exec('container', ['system', 'start', '--enable-kernel-install'], {
+          env: { PATH: this.getInstallationPath() },
+          logger,
+        });
+      } finally {
+        // Start socktainer if the system is now running, or go back to 'stopped' if it failed to start
+        await this.updateContainerSystemStatus(appleProvider);
+      }
+    });
+  }
+
+  async stopContainerSystem(appleProvider: Provider, logger?: Logger): Promise<void> {
+    return this.queueStatusTask(async () => {
+      appleProvider.updateStatus('stopping');
+      this.#connectionStatus = 'stopping';
+      this.stopSocktainer();
+      try {
+        await process.exec('container', ['system', 'stop'], { env: { PATH: this.getInstallationPath() }, logger });
+      } finally {
+        // Report 'stopped', or start socktainer again if the system is still running
+        await this.updateContainerSystemStatus(appleProvider);
+      }
+    });
   }
 
   // Use folder from dist folder
@@ -145,7 +214,6 @@ export class ContainerProviderManager {
   }
 
   protected async startSocktainer(
-    appleProvider: Provider,
     containerMinorVersion: string,
     telemetryProperties: Record<string, string | TelemetryTrustedValue>,
   ): Promise<void> {
@@ -168,36 +236,24 @@ export class ContainerProviderManager {
     });
     socktainerProcess.on('close', code => {
       console.log(`socktainer process exited with code ${code}`);
-      // The socktainer stopped on its own: drop its connection so that the next status check starts it again
+      // The socktainer stopped on its own: report the connection as stopped so that the next status check starts it again
       if (this.#socktainerProcess === socktainerProcess) {
-        this.cleanupConnection().catch(console.error);
+        this.#socktainerProcess = undefined;
+        this.#socktainerContainerVersion = undefined;
+        this.#connectionStatus = 'stopped';
       }
     });
 
-    const homeDir = homedir();
-    const socketPath = resolve(homeDir, '.socktainer', 'container.sock');
-
-    let providerState: ProviderConnectionStatus = 'starting';
-
-    this.#containerProviderConnection = {
-      name: 'Apple',
-      type: 'docker',
-      status: (): ProviderConnectionStatus => providerState,
-      endpoint: {
-        socketPath,
-      },
-    };
+    this.#connectionStatus = 'starting';
 
     // Wait a couple of seconds to let the socktainer start
     await this.timeout(2000);
-    // The socktainer exited or the connection was cleaned up while waiting: don't register a dead connection
+    // The socktainer exited or was stopped while waiting: don't report a dead connection as started
     if (this.#socktainerProcess !== socktainerProcess) {
       return;
     }
-    providerState = 'started';
-    this.#connectionDisposable = appleProvider.registerContainerProviderConnection(this.#containerProviderConnection);
+    this.#connectionStatus = 'started';
     this.telemetryLogger.logUsage('registeredConnection', telemetryProperties);
-    this.extensionContext.subscriptions.push(this.#connectionDisposable);
   }
 
   async updateContainerSystemStatus(appleProvider: Provider): Promise<void> {
@@ -253,27 +309,31 @@ export class ContainerProviderManager {
     } catch (error: unknown) {
       this.logOnStatusChange(previousStatus, 'stopped', 'Error checking container runtime status', error);
     }
+    // The extension was deactivated during the checks: don't register anything
+    if (this.#stopMonitoringStatus) {
+      return;
+    }
+    this.registerConnection(appleProvider);
     if (systemRunning) {
       appleProvider.updateStatus('ready');
 
       // Apple container version changed since socktainer was started: restart the matching one
-      if (this.#containerProviderConnection && this.#socktainerContainerVersion !== containerMinorVersion) {
+      if (this.#socktainerProcess && this.#socktainerContainerVersion !== containerMinorVersion) {
         console.log(`Apple container version changed to ${containerMinorVersion}, restarting socktainer`);
-        await this.cleanupConnection();
+        this.stopSocktainer();
       }
 
       // Is it already started?
-      if (this.#containerProviderConnection) {
+      if (this.#socktainerProcess) {
         console.log('container provider connection already started');
         return;
       }
 
-      // Register also the socktainer
-      await this.startSocktainer(appleProvider, containerMinorVersion, telemetryProperties);
+      await this.startSocktainer(containerMinorVersion, telemetryProperties);
     } else {
-      // Cleanup any existing connection
-      await this.cleanupConnection();
-      // Not running
+      // Not running: socktainer has nothing to serve
+      this.stopSocktainer();
+      this.#connectionStatus = 'stopped';
       appleProvider.updateStatus('stopped');
     }
   }
@@ -282,7 +342,7 @@ export class ContainerProviderManager {
     // Call us again
     if (!this.#stopMonitoringStatus) {
       try {
-        await this.updateContainerSystemStatus(provider);
+        await this.queueStatusTask(() => this.updateContainerSystemStatus(provider));
       } catch (error: unknown) {
         // Ignore the update of status
         console.trace('Error updating container system status', error);

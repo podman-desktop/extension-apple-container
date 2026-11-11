@@ -13,6 +13,7 @@ A **Podman Desktop extension** to manage **Apple containers** on **macOS** (ARM6
 ## 🚀 Features
 
 - View and manage Apple containers directly in Podman Desktop
+- Start and stop the Apple container system service from the Resources page
 - Designed specifically for macOS on ARM64
 - Easy installation and updates via Podman Desktop
 - Uses **[Socktainer](https://github.com/socktainer/socktainer)** under the hood to provide a Docker REST API on top of Apple containers
@@ -47,11 +48,12 @@ ghcr.io/podman-desktop/extension-apple-container:next
 
 > To install a specific release, check available versions and replace `:next` with `:<version>`
 
-4. Make sure the Apple container system is installed and running:
+4. Make sure the [Apple container CLI](https://github.com/apple/container) is installed. The **Apple** connection then appears in **Settings → Resources**, where you can start and stop the Apple container system service. You can also do it from a terminal:
 
 ```
 container system start
 container system status
+container system stop
 ```
 
 ---
