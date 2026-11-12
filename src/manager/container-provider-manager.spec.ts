@@ -504,5 +504,32 @@ describe('updateContainerSystemStatus', () => {
 
       expect(providerMock.registerContainerProviderConnection).not.toHaveBeenCalled();
     });
+
+    it('should not start the container system when the extension is deactivated while the start is queued', async () => {
+      expect.assertions(2);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      let finishCheck: (() => void) | undefined;
+      const blockedCheck = containerProviderManager['queueStatusTask'](
+        async () =>
+          new Promise<void>(resolve => {
+            finishCheck = resolve;
+          }),
+      );
+
+      const start = connection.lifecycle?.start?.({ log: logger }, logger);
+      await containerProviderManager.deactivate();
+      finishCheck?.();
+      await blockedCheck;
+      await start;
+
+      expect(process.exec).not.toHaveBeenCalledWith(
+        'container',
+        ['system', 'start', '--enable-kernel-install'],
+        expect.anything(),
+      );
+      expect(providerMock.updateStatus).not.toHaveBeenCalledWith('starting');
+    });
   });
 });

@@ -164,6 +164,10 @@ export class ContainerProviderManager {
 
   async startContainerSystem(appleProvider: Provider, logger?: Logger): Promise<void> {
     return this.queueStatusTask(async () => {
+      // The extension was deactivated while this action was queued: don't start the system behind its back
+      if (this.#stopMonitoringStatus) {
+        return;
+      }
       appleProvider.updateStatus('starting');
       this.#connectionStatus = 'starting';
       try {
