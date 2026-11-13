@@ -57,6 +57,9 @@ export class ContainerProviderManager {
     'More information: [extension README](https://github.com/podman-desktop/extension-apple-container#readme)',
   ].join('\n\n');
 
+  // A status check running longer than this is abandoned so that it does not block Start/Stop and the next polls
+  static readonly STATUS_CHECK_TIMEOUT = 20_000;
+
   @inject(ExtensionContextSymbol)
   private readonly extensionContext: ExtensionContext;
 
@@ -178,13 +181,17 @@ export class ContainerProviderManager {
         });
       } finally {
         // Start socktainer if the system is now running, or go back to 'stopped' if it failed to start
-        await this.updateContainerSystemStatus(appleProvider);
+        await this.checkContainerSystemStatus(appleProvider);
       }
     });
   }
 
   async stopContainerSystem(appleProvider: Provider, logger?: Logger): Promise<void> {
     return this.queueStatusTask(async () => {
+      // The extension was deactivated while this action was queued: don't stop the system behind its back
+      if (this.#stopMonitoringStatus) {
+        return;
+      }
       appleProvider.updateStatus('stopping');
       this.#connectionStatus = 'stopping';
       this.stopSocktainer();
@@ -192,7 +199,7 @@ export class ContainerProviderManager {
         await process.exec('container', ['system', 'stop'], { env: { PATH: this.getInstallationPath() }, logger });
       } finally {
         // Report 'stopped', or start socktainer again if the system is still running
-        await this.updateContainerSystemStatus(appleProvider);
+        await this.checkContainerSystemStatus(appleProvider);
       }
     });
   }
@@ -258,6 +265,22 @@ export class ContainerProviderManager {
     }
     this.#connectionStatus = 'started';
     this.telemetryLogger.logUsage('registeredConnection', telemetryProperties);
+  }
+
+  // Update the status, giving up if the container CLI never answers (e.g. a hanging apiserver)
+  protected async checkContainerSystemStatus(appleProvider: Provider): Promise<void> {
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(
+        () => reject(new Error('Timeout while checking the Apple container system status')),
+        ContainerProviderManager.STATUS_CHECK_TIMEOUT,
+      );
+    });
+    try {
+      await Promise.race([this.updateContainerSystemStatus(appleProvider), timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async updateContainerSystemStatus(appleProvider: Provider): Promise<void> {
@@ -346,7 +369,7 @@ export class ContainerProviderManager {
     // Call us again
     if (!this.#stopMonitoringStatus) {
       try {
-        await this.queueStatusTask(() => this.updateContainerSystemStatus(provider));
+        await this.queueStatusTask(() => this.checkContainerSystemStatus(provider));
       } catch (error: unknown) {
         // Ignore the update of status
         console.trace('Error updating container system status', error);

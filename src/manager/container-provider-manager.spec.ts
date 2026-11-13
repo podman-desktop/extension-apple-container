@@ -531,5 +531,55 @@ describe('updateContainerSystemStatus', () => {
       );
       expect(providerMock.updateStatus).not.toHaveBeenCalledWith('starting');
     });
+
+    it('should not stop the container system when the extension is deactivated while the stop is queued', async () => {
+      expect.assertions(2);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      let finishCheck: (() => void) | undefined;
+      const blockedCheck = containerProviderManager['queueStatusTask'](
+        async () =>
+          new Promise<void>(resolve => {
+            finishCheck = resolve;
+          }),
+      );
+
+      const stop = connection.lifecycle?.stop?.({ log: logger }, logger);
+      await containerProviderManager.deactivate();
+      finishCheck?.();
+      await blockedCheck;
+      await stop;
+
+      expect(process.exec).not.toHaveBeenCalledWith('container', ['system', 'stop'], expect.anything());
+      expect(providerMock.updateStatus).not.toHaveBeenCalledWith('stopping');
+    });
+
+    it('should release the queue when a status check never settles', async () => {
+      expect.assertions(2);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      // The first command never answers, the following ones succeed
+      vi.mocked(process.exec).mockImplementationOnce(async () => new Promise(() => {}));
+      vi.mocked(process.exec).mockResolvedValue({
+        command: '',
+        stderr: '',
+        stdout: 'container CLI version 1.4.2 (build: release, commit: d265d66)',
+      });
+
+      const hungCheck = containerProviderManager['queueStatusTask'](() =>
+        containerProviderManager['checkContainerSystemStatus'](providerMock),
+      ).catch((error: unknown) => error);
+      const stop = connection.lifecycle?.stop?.({ log: logger }, logger);
+      await vi.advanceTimersByTimeAsync(ContainerProviderManager.STATUS_CHECK_TIMEOUT);
+      expect(await hungCheck).toStrictEqual(new Error('Timeout while checking the Apple container system status'));
+
+      // The stop was waiting behind the hung check: it runs once the check is abandoned
+      await vi.advanceTimersByTimeAsync(2000);
+      await stop;
+
+      expect(process.exec).toHaveBeenCalledWith('container', ['system', 'stop'], expect.anything());
+    });
   });
 });
