@@ -19,7 +19,9 @@ import { afterEach, beforeEach, describe, expect, vi, it } from 'vitest';
 import { Container } from 'inversify';
 import { ExtensionContextSymbol, TelemetryLoggerSymbol } from '../inject/symbol';
 import {
+  type ContainerProviderConnection,
   type ExtensionContext,
+  type Logger,
   type Provider,
   type TelemetryLogger,
   type TelemetryTrustedValue,
@@ -106,6 +108,14 @@ describe('updateContainerSystemStatus', () => {
     vi.spyOn(containerProviderManager, 'timeout').mockResolvedValue();
   });
 
+  function getRegisteredConnection(): ContainerProviderConnection {
+    const connection = vi.mocked(providerMock).registerContainerProviderConnection.mock.lastCall?.[0];
+    if (!connection) {
+      throw new Error('no connection registered');
+    }
+    return connection;
+  }
+
   function mockContainerVersion(version: string): void {
     vi.mocked(process.exec).mockImplementation(async (_cmd, args) => ({
       command: '',
@@ -181,24 +191,29 @@ describe('updateContainerSystemStatus', () => {
   });
 
   it('should restart socktainer on the next check when it exited', async () => {
-    expect.assertions(3);
+    expect.assertions(4);
 
     mockContainerVersion('1.4.2');
-    const connectionDisposable = { dispose: vi.fn<() => void>() };
-    vi.mocked(providerMock.registerContainerProviderConnection).mockReturnValue(connectionDisposable);
+    vi.mocked(providerMock.registerContainerProviderConnection).mockReturnValue({ dispose: vi.fn<() => void>() });
     const emitSocktainerEvent = mockSocktainerProcess();
+    mockSocktainerProcess();
 
     await containerProviderManager.updateContainerSystemStatus(providerMock);
     emitSocktainerEvent('close', 1);
+
+    expect(getRegisteredConnection().status()).toBe('stopped');
+
     await containerProviderManager.updateContainerSystemStatus(providerMock);
 
-    expect(connectionDisposable.dispose).toHaveBeenCalledExactlyOnceWith();
     expect(spawn).toHaveBeenCalledTimes(2);
-    expect(providerMock.registerContainerProviderConnection).toHaveBeenCalledTimes(2);
+    expect(getRegisteredConnection().status()).toBe('started');
+    expect(providerMock.registerContainerProviderConnection).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ name: 'Apple' }),
+    );
   });
 
-  it('should keep the connection when a replaced socktainer exits', async () => {
-    expect.assertions(1);
+  it('should keep the connection started when a replaced socktainer exits', async () => {
+    expect.assertions(2);
 
     const connectionDisposable = { dispose: vi.fn<() => void>() };
     vi.mocked(providerMock.registerContainerProviderConnection).mockReturnValue(connectionDisposable);
@@ -212,11 +227,12 @@ describe('updateContainerSystemStatus', () => {
     // The first socktainer was killed when the container version changed
     emitFirstSocktainerEvent('close', 0);
 
-    expect(connectionDisposable.dispose).toHaveBeenCalledExactlyOnceWith();
+    expect(connectionDisposable.dispose).not.toHaveBeenCalled();
+    expect(getRegisteredConnection().status()).toBe('started');
   });
 
-  it('should not register the connection when socktainer exits while starting', async () => {
-    expect.assertions(1);
+  it('should not report the connection as started when socktainer exits while starting', async () => {
+    expect.assertions(2);
 
     mockContainerVersion('1.4.2');
     const emitSocktainerEvent = mockSocktainerProcess();
@@ -226,7 +242,8 @@ describe('updateContainerSystemStatus', () => {
 
     await containerProviderManager.updateContainerSystemStatus(providerMock);
 
-    expect(providerMock.registerContainerProviderConnection).not.toHaveBeenCalled();
+    expect(getRegisteredConnection().status()).toBe('stopped');
+    expect(telemetryLoggerMock.logUsage).not.toHaveBeenCalled();
   });
 
   it('should report not-installed when the container CLI is missing', async () => {
@@ -280,5 +297,289 @@ describe('updateContainerSystemStatus', () => {
     expect(providerMock.updateStatus).toHaveBeenLastCalledWith('error');
     expect(spawn).not.toHaveBeenCalled();
     expect(window.showErrorMessage).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('1.2.0'));
+  });
+
+  it('should unregister the connection when the container CLI is removed', async () => {
+    expect.assertions(2);
+
+    const connectionDisposable = { dispose: vi.fn<() => void>() };
+    vi.mocked(providerMock.registerContainerProviderConnection).mockReturnValue(connectionDisposable);
+    vi.mocked(spawn).mockReturnValue({
+      on: vi.fn<ChildProcess['on']>(),
+      kill: vi.fn<ChildProcess['kill']>(),
+    } as unknown as ChildProcess);
+
+    mockContainerVersion('1.4.2');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    vi.mocked(process.exec).mockRejectedValue(new Error('not found'));
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(connectionDisposable.dispose).toHaveBeenCalledExactlyOnceWith();
+    expect(getRegisteredConnection().status()).toBe('stopped');
+  });
+
+  describe('start and stop of the container system', () => {
+    const logger: Logger = {
+      log: vi.fn<Logger['log']>(),
+      error: vi.fn<Logger['error']>(),
+      warn: vi.fn<Logger['warn']>(),
+    };
+
+    let systemRunning: boolean;
+
+    beforeEach(() => {
+      systemRunning = false;
+      vi.mocked(providerMock.registerContainerProviderConnection).mockReturnValue({ dispose: vi.fn<() => void>() });
+      vi.mocked(spawn).mockReturnValue({
+        on: vi.fn<ChildProcess['on']>(),
+        kill: vi.fn<ChildProcess['kill']>(),
+      } as unknown as ChildProcess);
+      // 'container system start/stop' change the state reported by 'container system status'
+      vi.mocked(process.exec).mockImplementation(async (_cmd, args) => {
+        if (args?.[1] === 'start') {
+          systemRunning = true;
+        } else if (args?.[1] === 'stop') {
+          systemRunning = false;
+        } else if (args?.[1] === 'status' && !systemRunning) {
+          throw new Error('apiserver is not running');
+        }
+        const stdout = args?.[1] === '--version' ? 'container CLI version 1.4.2 (build: release, commit: d265d66)' : '';
+        return { command: '', stderr: '', stdout };
+      });
+    });
+
+    it('should register a stopped connection with start and stop actions when the system is not running', async () => {
+      expect.assertions(5);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+      const connection = getRegisteredConnection();
+
+      expect(connection.status()).toBe('stopped');
+      expect(connection.lifecycle?.start).toBeDefined();
+      expect(connection.lifecycle?.stop).toBeDefined();
+      expect(spawn).not.toHaveBeenCalled();
+      expect(providerMock.updateStatus).toHaveBeenLastCalledWith('stopped');
+    });
+
+    it('should start the container system and socktainer from the connection', async () => {
+      expect.assertions(5);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      await connection.lifecycle?.start?.({ log: logger }, logger);
+
+      expect(process.exec).toHaveBeenCalledWith('container', ['system', 'start', '--enable-kernel-install'], {
+        env: { PATH: expect.any(String) },
+        logger,
+      });
+      expect(spawn).toHaveBeenCalledTimes(1);
+      expect(connection.status()).toBe('started');
+      expect(providerMock.updateStatus).toHaveBeenLastCalledWith('ready');
+      expect(providerMock.registerContainerProviderConnection).toHaveBeenCalledExactlyOnceWith(connection);
+    });
+
+    it('should report the starting status while the container system starts', async () => {
+      expect.assertions(3);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      let statusWhileStarting: string | undefined;
+      vi.mocked(process.exec).mockImplementationOnce(async () => {
+        statusWhileStarting = connection.status();
+        throw new Error('start failed');
+      });
+
+      await expect(connection.lifecycle?.start?.({ log: logger }, logger)).rejects.toThrow('start failed');
+
+      expect(statusWhileStarting).toBe('starting');
+      expect(providerMock.updateStatus).toHaveBeenCalledWith('starting');
+    });
+
+    it('should go back to stopped when the container system fails to start', async () => {
+      expect.assertions(4);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      vi.mocked(process.exec).mockRejectedValueOnce(new Error('kernel download failed'));
+
+      await expect(connection.lifecycle?.start?.({ log: logger }, logger)).rejects.toThrow('kernel download failed');
+
+      expect(connection.status()).toBe('stopped');
+      expect(providerMock.updateStatus).toHaveBeenLastCalledWith('stopped');
+      expect(spawn).not.toHaveBeenCalled();
+    });
+
+    it('should stop socktainer and the container system from the connection', async () => {
+      expect.assertions(5);
+
+      systemRunning = true;
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      const socktainerProcess = vi.mocked(spawn).mock.results[0]?.value as ChildProcess;
+      await connection.lifecycle?.stop?.({ log: logger }, logger);
+
+      expect(socktainerProcess.kill).toHaveBeenCalledExactlyOnceWith();
+      expect(process.exec).toHaveBeenCalledWith('container', ['system', 'stop'], {
+        env: { PATH: expect.any(String) },
+        logger,
+      });
+      expect(connection.status()).toBe('stopped');
+      expect(providerMock.updateStatus).toHaveBeenLastCalledWith('stopped');
+      expect(providerMock.registerContainerProviderConnection).toHaveBeenCalledExactlyOnceWith(connection);
+    });
+
+    it('should report the stopping status while the container system stops', async () => {
+      expect.assertions(2);
+
+      systemRunning = true;
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      let statusWhileStopping: string | undefined;
+      vi.mocked(process.exec).mockImplementationOnce(async () => {
+        statusWhileStopping = connection.status();
+        systemRunning = false;
+        return { command: '', stderr: '', stdout: '' };
+      });
+      await connection.lifecycle?.stop?.({ log: logger }, logger);
+
+      expect(statusWhileStopping).toBe('stopping');
+      expect(providerMock.updateStatus).toHaveBeenCalledWith('stopping');
+    });
+
+    it('should start socktainer again when the container system fails to stop', async () => {
+      expect.assertions(3);
+
+      systemRunning = true;
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      vi.mocked(process.exec).mockRejectedValueOnce(new Error('stop failed'));
+
+      await expect(connection.lifecycle?.stop?.({ log: logger }, logger)).rejects.toThrow('stop failed');
+
+      expect(spawn).toHaveBeenCalledTimes(2);
+      expect(connection.status()).toBe('started');
+    });
+
+    it('should wait for a running start before stopping the container system', async () => {
+      expect.assertions(2);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      let finishStart: (() => void) | undefined;
+      vi.mocked(process.exec).mockImplementationOnce(
+        async () =>
+          new Promise(resolve => {
+            finishStart = (): void => {
+              systemRunning = true;
+              resolve({ command: '', stderr: '', stdout: '' });
+            };
+          }),
+      );
+
+      const start = connection.lifecycle?.start?.({ log: logger }, logger);
+      const stop = connection.lifecycle?.stop?.({ log: logger }, logger);
+      await vi.waitUntil(() => finishStart);
+
+      expect(process.exec).not.toHaveBeenCalledWith('container', ['system', 'stop'], expect.anything());
+
+      finishStart?.();
+      await start;
+      await stop;
+
+      expect(getRegisteredConnection().status()).toBe('stopped');
+    });
+
+    it('should not register a connection when the extension is deactivated during the checks', async () => {
+      expect.assertions(1);
+
+      vi.mocked(process.exec).mockImplementation(async (_cmd, args) => {
+        if (args?.[1] === 'status') {
+          await containerProviderManager.deactivate();
+        }
+        return { command: '', stderr: '', stdout: 'container CLI version 1.4.2 (build: release, commit: d265d66)' };
+      });
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+      expect(providerMock.registerContainerProviderConnection).not.toHaveBeenCalled();
+    });
+
+    it('should not start the container system when the extension is deactivated while the start is queued', async () => {
+      expect.assertions(2);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      let finishCheck: (() => void) | undefined;
+      const blockedCheck = containerProviderManager['queueStatusTask'](
+        async () =>
+          new Promise<void>(resolve => {
+            finishCheck = resolve;
+          }),
+      );
+
+      const start = connection.lifecycle?.start?.({ log: logger }, logger);
+      await containerProviderManager.deactivate();
+      finishCheck?.();
+      await blockedCheck;
+      await start;
+
+      expect(process.exec).not.toHaveBeenCalledWith(
+        'container',
+        ['system', 'start', '--enable-kernel-install'],
+        expect.anything(),
+      );
+      expect(providerMock.updateStatus).not.toHaveBeenCalledWith('starting');
+    });
+
+    it('should not stop the container system when the extension is deactivated while the stop is queued', async () => {
+      expect.assertions(2);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      let finishCheck: (() => void) | undefined;
+      const blockedCheck = containerProviderManager['queueStatusTask'](
+        async () =>
+          new Promise<void>(resolve => {
+            finishCheck = resolve;
+          }),
+      );
+
+      const stop = connection.lifecycle?.stop?.({ log: logger }, logger);
+      await containerProviderManager.deactivate();
+      finishCheck?.();
+      await blockedCheck;
+      await stop;
+
+      expect(process.exec).not.toHaveBeenCalledWith('container', ['system', 'stop'], expect.anything());
+      expect(providerMock.updateStatus).not.toHaveBeenCalledWith('stopping');
+    });
+
+    it('should release the queue when a status check never settles', async () => {
+      expect.assertions(2);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      // The first command never answers, the following ones succeed
+      vi.mocked(process.exec).mockImplementationOnce(async () => new Promise(() => {}));
+      vi.mocked(process.exec).mockResolvedValue({
+        command: '',
+        stderr: '',
+        stdout: 'container CLI version 1.4.2 (build: release, commit: d265d66)',
+      });
+
+      const hungCheck = containerProviderManager['queueStatusTask'](() =>
+        containerProviderManager['checkContainerSystemStatus'](providerMock),
+      ).catch((error: unknown) => error);
+      const stop = connection.lifecycle?.stop?.({ log: logger }, logger);
+      await vi.advanceTimersByTimeAsync(ContainerProviderManager.STATUS_CHECK_TIMEOUT);
+      expect(await hungCheck).toStrictEqual(new Error('Timeout while checking the Apple container system status'));
+
+      // The stop was waiting behind the hung check: it runs once the check is abandoned
+      await vi.advanceTimersByTimeAsync(2000);
+      await stop;
+
+      expect(process.exec).toHaveBeenCalledWith('container', ['system', 'stop'], expect.anything());
+    });
   });
 });
