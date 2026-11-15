@@ -157,6 +157,34 @@ describe('updateContainerSystemStatus', () => {
     expect(providerMock.updateStatus).toHaveBeenLastCalledWith('ready');
   });
 
+  it.each([
+    { state: 'running', version: '1.4.2', running: true, expectedStatus: 'ready' },
+    { state: 'not running', version: '1.4.2', running: false, expectedStatus: 'stopped' },
+    { state: 'unsupported', version: '1.2.0', running: true, expectedStatus: 'error' },
+  ])(
+    'should only set the $expectedStatus status when the system is $state',
+    async ({ version, running, expectedStatus }) => {
+      expect.assertions(1);
+
+      vi.mocked(process.exec).mockImplementation(async (_cmd, args) => {
+        if (args?.[1] === 'status' && !running) {
+          throw new Error('apiserver is not running');
+        }
+        return {
+          command: '',
+          stderr: '',
+          stdout: args?.[1] === '--version' ? `container CLI version ${version} (build: release, commit: d265d66)` : '',
+        };
+      });
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+      // Each status update notifies Podman Desktop: an intermediate status would make the provider flicker on every poll
+      expect(vi.mocked(providerMock.updateStatus).mock.calls).toStrictEqual([[expectedStatus], [expectedStatus]]);
+    },
+  );
+
   // Returns a function emitting an event to the listener registered on the spawned socktainer process
   function mockSocktainerProcess(): (event: string, ...args: unknown[]) => void {
     const on = vi.fn<ChildProcess['on']>();
