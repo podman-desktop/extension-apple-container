@@ -221,9 +221,9 @@ export class ContainerProviderManager {
       this.logOnStatusChange(previousStatus, 'not-installed', 'Error checking container system version', error);
     }
 
-    if (systemInstalled) {
-      appleProvider.updateStatus('installed');
-    } else {
+    // Don't go through 'installed' when the CLI is found: the status would change twice on every poll
+    // (e.g. ready -> installed -> ready). The checks below set the final status: error, stopped or ready.
+    if (!systemInstalled) {
       appleProvider.updateStatus('not-installed');
       // Unregister any existing connection if any
       await this.cleanupConnection();
