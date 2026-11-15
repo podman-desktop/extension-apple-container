@@ -270,7 +270,7 @@ describe('updateContainerSystemStatus', () => {
   });
 
   it('should report an unsupported container version only once', async () => {
-    expect.assertions(3);
+    expect.assertions(4);
 
     mockContainerVersion('1.2.0');
 
@@ -280,5 +280,21 @@ describe('updateContainerSystemStatus', () => {
     expect(providerMock.updateStatus).toHaveBeenLastCalledWith('error');
     expect(spawn).not.toHaveBeenCalled();
     expect(window.showErrorMessage).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('1.2.0'));
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('1.2.0'));
+  });
+
+  it('should report an unsupported container version again after a supported one', async () => {
+    expect.assertions(2);
+
+    mockSocktainerProcess();
+    mockContainerVersion('1.2.0');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    mockContainerVersion('1.4.2');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    mockContainerVersion('1.2.0');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(window.showErrorMessage).toHaveBeenCalledTimes(2);
+    expect(console.error).toHaveBeenCalledTimes(2);
   });
 });

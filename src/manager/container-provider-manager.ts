@@ -232,11 +232,12 @@ export class ContainerProviderManager {
 
     if (!containerMinorVersion || !Object.hasOwn(socktainerVersions, containerMinorVersion)) {
       const message = `Apple container version '${telemetryProperties.version}' is not supported. Supported versions: ${Object.keys(socktainerVersions).join(', ')}.`;
-      console.error(message);
       appleProvider.updateStatus('error');
       await this.cleanupConnection();
+      // Report it once, not on every poll: it's reported again after a supported version was found
       if (!this.#unsupportedVersionReported) {
         this.#unsupportedVersionReported = true;
+        console.error(message);
         window.showErrorMessage(message).catch(console.error);
       }
       return;
