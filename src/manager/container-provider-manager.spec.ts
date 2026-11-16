@@ -97,6 +97,7 @@ describe('registerContainerProvider', () => {
 describe('updateContainerSystemStatus', () => {
   const providerMock = {
     updateStatus: vi.fn<Provider['updateStatus']>(),
+    updateVersion: vi.fn<Provider['updateVersion']>(),
     registerContainerProviderConnection: vi.fn<Provider['registerContainerProviderConnection']>(),
   } as unknown as Provider;
 
@@ -247,6 +248,7 @@ describe('updateContainerSystemStatus', () => {
       updateStatus: vi.fn<Provider['updateStatus']>(function (this: { status: string }, status) {
         this.status = status;
       }),
+      updateVersion: vi.fn<Provider['updateVersion']>(),
     } as unknown as Provider;
     vi.mocked(process.exec).mockRejectedValue(new Error('not found'));
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -255,6 +257,32 @@ describe('updateContainerSystemStatus', () => {
     await containerProviderManager.updateContainerSystemStatus(statefulProvider);
 
     expect(errorSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    { state: 'supported', version: '1.4.2' },
+    { state: 'unsupported', version: '1.2.0' },
+  ])('should display the installed $state container version', async ({ version }) => {
+    expect.assertions(1);
+
+    mockContainerVersion(version);
+
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(providerMock.updateVersion).toHaveBeenCalledExactlyOnceWith(version);
+  });
+
+  it('should clear the displayed version when the container CLI is no longer found', async () => {
+    expect.assertions(2);
+
+    mockSocktainerProcess();
+    mockContainerVersion('1.4.2');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    vi.mocked(process.exec).mockRejectedValue(new Error('not found'));
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(providerMock.updateVersion).toHaveBeenNthCalledWith(1, '1.4.2');
+    expect(providerMock.updateVersion).toHaveBeenLastCalledWith(undefined);
   });
 
   it('should add the Homebrew and default install folders to the PATH of the container CLI', async () => {

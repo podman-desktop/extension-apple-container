@@ -66,7 +66,7 @@ The extension embeds one [socktainer](https://github.com/socktainer/socktainer) 
 
 [`socktainer-versions.json`](socktainer-versions.json) lists the supported versions: it maps each Apple container minor version to its socktainer release. A nightly workflow opens a pull request to update it when new releases come out, so that it covers the last 3 Apple container minor versions.
 
-To check which version is installed:
+Podman Desktop shows the installed version next to the **Apple** provider name, on the Dashboard and in **Settings** → **Resources**. You can also check it from a terminal:
 
 ```
 container system --version
