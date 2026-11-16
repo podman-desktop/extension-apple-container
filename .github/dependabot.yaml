@@ -39,7 +39,7 @@ updates:
           - "vitest"
 
   - package-ecosystem: "docker"
-    directory: "/build"
+    directory: "/"
     schedule:
       interval: daily
       # check at 3am UTC
