@@ -207,6 +207,7 @@ export class ContainerProviderManager {
     const previousStatus = appleProvider.status;
 
     let systemInstalled = false;
+    let containerVersion: string | undefined;
     let containerMinorVersion: string | undefined;
     const telemetryProperties: Record<string, string | TelemetryTrustedValue> = {};
     try {
@@ -214,12 +215,17 @@ export class ContainerProviderManager {
         env: { PATH: this.getInstallationPath() },
       });
       telemetryProperties.version = stdout.trim();
-      // E.g. 'container CLI version 1.5.0 (build: release, commit: d265d66)' -> '1.5'
-      containerMinorVersion = /version (\d+\.\d+)\./.exec(stdout)?.[1];
+      // E.g. 'container CLI version 1.5.0 (build: release, commit: d265d66)' -> '1.5.0' and '1.5'
+      const versionMatch = /version ((\d+\.\d+)\.\d+)/.exec(stdout);
+      containerVersion = versionMatch?.[1];
+      containerMinorVersion = versionMatch?.[2];
       systemInstalled = true;
     } catch (error: unknown) {
       this.logOnStatusChange(previousStatus, 'not-installed', 'Error checking container system version', error);
     }
+
+    // Displayed next to the provider name on the Dashboard and Resources pages, also for an unsupported version
+    appleProvider.updateVersion(containerVersion);
 
     if (systemInstalled) {
       appleProvider.updateStatus('installed');
