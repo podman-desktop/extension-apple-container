@@ -12,6 +12,9 @@
   "engines": {
     "podman-desktop": "^1.21.0"
   },
+  "targetPlatforms": [
+    "darwin/arm64"
+  ],
   "main": "./dist/main.cjs",
   "scripts": {
     "download-dependencies": "tsx ./scripts/download.ts",
