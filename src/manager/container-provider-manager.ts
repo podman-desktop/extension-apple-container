@@ -78,6 +78,9 @@ export class ContainerProviderManager {
 
   #stopMonitoringStatus = false;
 
+  // Advances when a status check times out, so that the abandoned check does not update the state when it finally settles
+  #statusGeneration = 0;
+
   #unsupportedVersionReported = false;
 
   // Apple container minor version the running socktainer was picked for
@@ -269,21 +272,32 @@ export class ContainerProviderManager {
 
   // Update the status, giving up if the container CLI never answers (e.g. a hanging apiserver)
   protected async checkContainerSystemStatus(appleProvider: Provider): Promise<void> {
+    const generation = this.#statusGeneration;
     let timer: NodeJS.Timeout | undefined;
     const timeout = new Promise<never>((_resolve, reject) => {
-      timer = setTimeout(
-        () => reject(new Error('Timeout while checking the Apple container system status')),
-        ContainerProviderManager.STATUS_CHECK_TIMEOUT,
-      );
+      timer = setTimeout(() => {
+        this.#statusGeneration++;
+        reject(new Error('Timeout while checking the Apple container system status'));
+      }, ContainerProviderManager.STATUS_CHECK_TIMEOUT);
     });
     try {
-      await Promise.race([this.updateContainerSystemStatus(appleProvider), timeout]);
+      await Promise.race([this.updateContainerSystemStatus(appleProvider, generation), timeout]);
     } finally {
       clearTimeout(timer);
     }
   }
 
-  async updateContainerSystemStatus(appleProvider: Provider): Promise<void> {
+  protected async isSystemRunning(previousStatus: ProviderStatus): Promise<boolean> {
+    try {
+      await process.exec('container', ['system', 'status'], { env: { PATH: this.getInstallationPath() } });
+      return true;
+    } catch (error: unknown) {
+      this.logOnStatusChange(previousStatus, 'stopped', 'Error checking container runtime status', error);
+      return false;
+    }
+  }
+
+  async updateContainerSystemStatus(appleProvider: Provider, generation = this.#statusGeneration): Promise<void> {
     // Check if apple container runtime is installed and running
     // Launch container system --version
     // Only log errors on status transitions, not on every poll
@@ -302,6 +316,11 @@ export class ContainerProviderManager {
       systemInstalled = true;
     } catch (error: unknown) {
       this.logOnStatusChange(previousStatus, 'not-installed', 'Error checking container system version', error);
+    }
+
+    // The check timed out in the meantime: leave the state to the checks and actions that follow
+    if (generation !== this.#statusGeneration) {
+      return;
     }
 
     if (systemInstalled) {
@@ -329,15 +348,9 @@ export class ContainerProviderManager {
       socktainerVersions[containerMinorVersion as keyof typeof socktainerVersions];
 
     // Launch the command 'container runtime status' and check if there is an error
-    let systemRunning = false;
-    try {
-      await process.exec('container', ['system', 'status'], { env: { PATH: this.getInstallationPath() } });
-      systemRunning = true;
-    } catch (error: unknown) {
-      this.logOnStatusChange(previousStatus, 'stopped', 'Error checking container runtime status', error);
-    }
+    const systemRunning = await this.isSystemRunning(previousStatus);
     // The extension was deactivated during the checks: don't register anything
-    if (this.#stopMonitoringStatus) {
+    if (this.#stopMonitoringStatus || generation !== this.#statusGeneration) {
       return;
     }
     this.registerConnection(appleProvider);

@@ -581,5 +581,41 @@ describe('updateContainerSystemStatus', () => {
 
       expect(process.exec).toHaveBeenCalledWith('container', ['system', 'stop'], expect.anything());
     });
+
+    it('should ignore the result of a status check that settled after its timeout', async () => {
+      expect.assertions(3);
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      const connection = getRegisteredConnection();
+      const statusBefore = connection.status();
+      vi.mocked(providerMock.updateStatus).mockClear();
+
+      // The version answers, then 'container system status' hangs until it fails after the timeout
+      let failStatus: ((error: Error) => void) | undefined;
+      vi.mocked(process.exec).mockResolvedValueOnce({
+        command: '',
+        stderr: '',
+        stdout: 'container CLI version 1.4.2 (build: release, commit: d265d66)',
+      });
+      vi.mocked(process.exec).mockImplementationOnce(
+        async () =>
+          new Promise((_resolve, reject) => {
+            failStatus = reject;
+          }),
+      );
+
+      const hungCheck = containerProviderManager['checkContainerSystemStatus'](providerMock).catch(
+        (error: unknown) => error,
+      );
+      await vi.advanceTimersByTimeAsync(ContainerProviderManager.STATUS_CHECK_TIMEOUT);
+      expect(await hungCheck).toStrictEqual(new Error('Timeout while checking the Apple container system status'));
+
+      // The abandoned check fails late: it must not report the running system as stopped
+      failStatus?.(new Error('late failure'));
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(connection.status()).toBe(statusBefore);
+      expect(vi.mocked(providerMock.updateStatus).mock.calls).toStrictEqual([['installed']]);
+    });
   });
 });
