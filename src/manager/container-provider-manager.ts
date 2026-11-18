@@ -323,9 +323,9 @@ export class ContainerProviderManager {
       return;
     }
 
-    if (systemInstalled) {
-      appleProvider.updateStatus('installed');
-    } else {
+    // Don't go through 'installed' when the CLI is found: the status would change twice on every poll
+    // (e.g. ready -> installed -> ready). The checks below set the final status: error, stopped or ready.
+    if (!systemInstalled) {
       appleProvider.updateStatus('not-installed');
       // Unregister any existing connection if any
       await this.cleanupConnection();
@@ -334,11 +334,12 @@ export class ContainerProviderManager {
 
     if (!containerMinorVersion || !Object.hasOwn(socktainerVersions, containerMinorVersion)) {
       const message = `Apple container version '${telemetryProperties.version}' is not supported. Supported versions: ${Object.keys(socktainerVersions).join(', ')}.`;
-      console.error(message);
       appleProvider.updateStatus('error');
       await this.cleanupConnection();
+      // Report it once, not on every poll: it's reported again after a supported version was found
       if (!this.#unsupportedVersionReported) {
         this.#unsupportedVersionReported = true;
+        console.error(message);
         window.showErrorMessage(message).catch(console.error);
       }
       return;

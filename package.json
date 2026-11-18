@@ -30,7 +30,7 @@
     "inversify": "^8.3.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.6",
+    "@biomejs/biome": "^2.6.7",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "@eslint/compat": "^2.1.1",
@@ -47,7 +47,7 @@
     "autoprefixer": "^10.6.2",
     "commitlint": "^21.2.4",
     "concurrently": "^10.0.7",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "eslint-import-resolver-custom-alias": "^1.3.2",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
@@ -61,7 +61,7 @@
     "tsx": "^4.23.15",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.72.2",
-    "vite": "8.3.7",
+    "vite": "8.3.8",
     "vitest": "^5.1.0"
   },
   "packageManager": "pnpm@12.14.0+sha512.c18ba6d87993d3d164cb5e8948f32b2c06ee854487e06cd8d86781342fb3e5bb4634367034711e86802baa9c37bea906ce1929ad08d70884c97d801df13389a6"

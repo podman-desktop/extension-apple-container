@@ -84,4 +84,3 @@ jobs:
         uses: podman-desktop/gh-extensions-actions/.github/actions/oci-build@e59cd52b942e8dfcc187293c5d8e9f3831c7ac0c # v0.11.0
         with:
           ref: ${{ github.ref }}
-          containerfile: build/Containerfile

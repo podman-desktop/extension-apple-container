@@ -133,7 +133,7 @@ jobs:
           tags: latest ${{ needs.tag.outputs.extVersion }}
           archs: amd64, arm64
           containerfiles: |
-            build/Containerfile
+            Containerfile
           context: .
           oci: true
 

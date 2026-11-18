@@ -167,6 +167,34 @@ describe('updateContainerSystemStatus', () => {
     expect(providerMock.updateStatus).toHaveBeenLastCalledWith('ready');
   });
 
+  it.each([
+    { state: 'running', version: '1.4.2', running: true, expectedStatus: 'ready' },
+    { state: 'not running', version: '1.4.2', running: false, expectedStatus: 'stopped' },
+    { state: 'unsupported', version: '1.2.0', running: true, expectedStatus: 'error' },
+  ])(
+    'should only set the $expectedStatus status when the system is $state',
+    async ({ version, running, expectedStatus }) => {
+      expect.assertions(1);
+
+      vi.mocked(process.exec).mockImplementation(async (_cmd, args) => {
+        if (args?.[1] === 'status' && !running) {
+          throw new Error('apiserver is not running');
+        }
+        return {
+          command: '',
+          stderr: '',
+          stdout: args?.[1] === '--version' ? `container CLI version ${version} (build: release, commit: d265d66)` : '',
+        };
+      });
+
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+      await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+      // Each status update notifies Podman Desktop: an intermediate status would make the provider flicker on every poll
+      expect(vi.mocked(providerMock.updateStatus).mock.calls).toStrictEqual([[expectedStatus], [expectedStatus]]);
+    },
+  );
+
   // Returns a function emitting an event to the listener registered on the spawned socktainer process
   function mockSocktainerProcess(): (event: string, ...args: unknown[]) => void {
     const on = vi.fn<ChildProcess['on']>();
@@ -287,7 +315,7 @@ describe('updateContainerSystemStatus', () => {
   });
 
   it('should report an unsupported container version only once', async () => {
-    expect.assertions(3);
+    expect.assertions(4);
 
     mockContainerVersion('1.2.0');
 
@@ -297,6 +325,22 @@ describe('updateContainerSystemStatus', () => {
     expect(providerMock.updateStatus).toHaveBeenLastCalledWith('error');
     expect(spawn).not.toHaveBeenCalled();
     expect(window.showErrorMessage).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('1.2.0'));
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('1.2.0'));
+  });
+
+  it('should report an unsupported container version again after a supported one', async () => {
+    expect.assertions(2);
+
+    mockSocktainerProcess();
+    mockContainerVersion('1.2.0');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    mockContainerVersion('1.4.2');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+    mockContainerVersion('1.2.0');
+    await containerProviderManager.updateContainerSystemStatus(providerMock);
+
+    expect(window.showErrorMessage).toHaveBeenCalledTimes(2);
+    expect(console.error).toHaveBeenCalledTimes(2);
   });
 
   it('should unregister the connection when the container CLI is removed', async () => {
@@ -615,7 +659,7 @@ describe('updateContainerSystemStatus', () => {
       await vi.advanceTimersByTimeAsync(0);
 
       expect(connection.status()).toBe(statusBefore);
-      expect(vi.mocked(providerMock.updateStatus).mock.calls).toStrictEqual([['installed']]);
+      expect(providerMock.updateStatus).not.toHaveBeenCalled();
     });
   });
 });
