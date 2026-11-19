@@ -244,7 +244,7 @@ export class ContainerProviderManager {
     }
     this.#unsupportedVersionReported = false;
     telemetryProperties.socktainerVersion =
-      socktainerVersions[containerMinorVersion as keyof typeof socktainerVersions];
+      socktainerVersions[containerMinorVersion as keyof typeof socktainerVersions].version;
 
     // Launch the command 'container runtime status' and check if there is an error
     let systemRunning = false;
