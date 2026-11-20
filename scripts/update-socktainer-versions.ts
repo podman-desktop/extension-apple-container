@@ -34,7 +34,7 @@ export interface Release {
   draft: boolean;
   prerelease: boolean;
   // digest is e.g. 'sha256:<hex>', computed by GitHub when the asset is uploaded
-  assets: { name: string; digest: string | null }[];
+  assets: { name: string; digest?: string }[];
 }
 
 export class SocktainerVersionsUpdater {

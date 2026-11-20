@@ -31,7 +31,7 @@ const __dirname = dirname(__filename);
 
 const binDir = path.resolve(__dirname, '..', 'dist', 'bin');
 
-class Downloader {
+export class Downloader {
   // The file is only written once its SHA-256 matches the expected one
   private async downloadFile(url: string, dest: string, expectedSha256: string): Promise<void> {
     const res = await fetch(url);
@@ -77,9 +77,9 @@ class Downloader {
   }
 }
 
-(async () => {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const downloader = new Downloader();
   for (const [containerVersion, { version, sha256 }] of Object.entries(socktainerVersions)) {
     await downloader.downloadAndExtract(version, sha256, path.join(binDir, containerVersion));
   }
-})();
+}

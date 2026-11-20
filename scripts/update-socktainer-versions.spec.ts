@@ -77,7 +77,7 @@ describe('computeChecksums', () => {
       'the release has no socktainer.zip asset',
       [release('v1.5.1', [{ name: 'socktainer', digest: `sha256:${'1'.repeat(64)}` }])],
     ],
-    ['the asset has no digest', [release('v1.5.1', [{ name: 'socktainer.zip', digest: null }])]],
+    ['the asset has no digest', [release('v1.5.1', [{ name: 'socktainer.zip' }])]],
     [
       'the digest is not a SHA-256',
       [release('v1.5.1', [{ name: 'socktainer.zip', digest: `sha512:${'a'.repeat(128)}` }])],
