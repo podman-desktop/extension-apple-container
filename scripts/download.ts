@@ -16,10 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { createHash } from 'node:crypto';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
-import { Downloader } from './socktainer-downloader';
+import AdmZip from 'adm-zip';
 // Apple container minor version -> socktainer version and SHA-256 of its socktainer.zip release asset
 import socktainerVersions from '../socktainer-versions.json';
 
@@ -28,6 +30,52 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const binDir = path.resolve(__dirname, '..', 'dist', 'bin');
+
+class Downloader {
+  // The file is only written once its SHA-256 matches the expected one
+  private async downloadFile(url: string, dest: string, expectedSha256: string): Promise<void> {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Failed to download ${url} (${res.status})`);
+    }
+
+    const content = Buffer.from(await res.arrayBuffer());
+    const sha256 = createHash('sha256').update(content).digest('hex');
+    if (sha256 !== expectedSha256) {
+      throw new Error(`Checksum mismatch for ${url}: expected SHA-256 ${expectedSha256}, got ${sha256}`);
+    }
+    await fs.promises.writeFile(dest, content);
+  }
+
+  private async extractZip(filePath: string, targetDir: string): Promise<void> {
+    const zip = new AdmZip(filePath);
+    zip.extractAllTo(targetDir, true);
+  }
+
+  public async downloadAndExtract(version: string, expectedSha256: string, outputDir: string): Promise<void> {
+    const downloadUrl = `https://github.com/socktainer/socktainer/releases/download/${version}/socktainer.zip`;
+    const downloadedZipFile = path.join(outputDir, 'socktainer.zip');
+
+    if (!fs.existsSync(outputDir)) {
+      await fs.promises.mkdir(outputDir, { recursive: true });
+    }
+
+    console.log(`Downloading socktainer from ${downloadUrl}...`);
+    await this.downloadFile(downloadUrl, downloadedZipFile, expectedSha256);
+
+    console.log(`Extracting ${downloadedZipFile} to ${outputDir}...`);
+    await this.extractZip(downloadedZipFile, outputDir);
+
+    // Cleanup zip file
+    await fs.promises.unlink(downloadedZipFile);
+
+    // add execution permission to the binary
+    const binaryPath = path.join(outputDir, 'socktainer');
+    await fs.promises.chmod(binaryPath, 0o755);
+
+    console.log('✅ Download and extraction complete');
+  }
+}
 
 (async () => {
   const downloader = new Downloader();
