@@ -18,6 +18,7 @@
 
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 import AdmZip from 'adm-zip';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -30,6 +31,8 @@ vi.mock(import('adm-zip'));
 
 const archive = Buffer.from('socktainer archive');
 const archiveSha256 = createHash('sha256').update(archive).digest('hex');
+const outputDir = '/out';
+const zipPath = path.join(outputDir, 'socktainer.zip');
 const url = 'https://github.com/socktainer/socktainer/releases/download/v1.0.0/socktainer.zip';
 
 beforeEach(() => {
@@ -69,12 +72,12 @@ describe('downloadAndExtract', () => {
       }),
     );
 
-    await new Downloader().downloadAndExtract('v1.0.0', archiveSha256, '/out');
+    await new Downloader().downloadAndExtract('v1.0.0', archiveSha256, outputDir);
 
     expect(fetch).toHaveBeenCalledWith(url);
-    expect(fs.promises.writeFile).toHaveBeenCalledWith('/out/socktainer.zip', archive);
-    expect(AdmZip).toHaveBeenCalledWith('/out/socktainer.zip');
-    expect(fs.promises.chmod).toHaveBeenCalledWith('/out/socktainer', 0o755);
+    expect(fs.promises.writeFile).toHaveBeenCalledWith(zipPath, archive);
+    expect(AdmZip).toHaveBeenCalledWith(zipPath);
+    expect(fs.promises.chmod).toHaveBeenCalledWith(path.join(outputDir, 'socktainer'), 0o755);
   });
 
   it('should reject a mismatching archive without writing or extracting anything', async () => {
@@ -89,7 +92,7 @@ describe('downloadAndExtract', () => {
     );
     const expected = '0'.repeat(64);
 
-    await expect(new Downloader().downloadAndExtract('v1.0.0', expected, '/out')).rejects.toThrow(
+    await expect(new Downloader().downloadAndExtract('v1.0.0', expected, outputDir)).rejects.toThrow(
       `Checksum mismatch for ${url}: expected SHA-256 ${expected}, got ${archiveSha256}`,
     );
 
@@ -102,7 +105,7 @@ describe('downloadAndExtract', () => {
 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
 
-    await expect(new Downloader().downloadAndExtract('v1.0.0', archiveSha256, '/out')).rejects.toThrow(
+    await expect(new Downloader().downloadAndExtract('v1.0.0', archiveSha256, outputDir)).rejects.toThrow(
       `Failed to download ${url} (404)`,
     );
 
