@@ -64,7 +64,9 @@ container system status
 
 The extension embeds one [socktainer](https://github.com/socktainer/socktainer) binary for each supported Apple container minor version, and starts the one that matches the installed `container` CLI.
 
-[`socktainer-versions.json`](socktainer-versions.json) lists the supported versions: it maps each Apple container minor version to its socktainer release. A nightly workflow opens a pull request to update it when new releases come out, so that it covers the last 3 Apple container minor versions.
+[`socktainer-versions.json`](socktainer-versions.json) lists the supported versions: it maps each Apple container minor version to its socktainer release (`version`). A nightly workflow opens a pull request to update it when new releases come out, so that it covers the last 3 Apple container minor versions.
+
+Each entry also pins the SHA-256 checksum of the `socktainer.zip` archive of its socktainer release, as published by GitHub for the release asset. The build fails if a downloaded archive doesn't match its checksum, so a modified or corrupted archive is never embedded in the extension. The nightly workflow updates the versions and their checksums together. To change the supported versions by hand, run `pnpm update-socktainer-versions` (set `GITHUB_TOKEN` to avoid the GitHub API rate limit) or add the `sha256` of each new socktainer release to the file.
 
 To check which version is installed:
 
@@ -153,7 +155,7 @@ pnpm install
 pnpm watch --extension-folder ../extension-apple-container
 ```
 
-`pnpm download-dependencies` downloads the socktainer binaries of all supported versions to `dist/bin/<version>/socktainer`. Run it again when `socktainer-versions.json` changes. Without these binaries, the extension can't start socktainer, and the logs show `spawn .../socktainer ENOENT` errors.
+`pnpm download-dependencies` downloads the socktainer binaries of all supported versions to `dist/bin/<version>/socktainer`, after checking each archive against its `sha256` in `socktainer-versions.json`. Run it again when `socktainer-versions.json` changes. Without these binaries, the extension can't start socktainer, and the logs show `spawn .../socktainer ENOENT` errors.
 
 Before opening a pull request, run the same checks as the CI:
 

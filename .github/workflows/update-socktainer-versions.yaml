@@ -58,6 +58,6 @@ jobs:
           add-paths: socktainer-versions.json
           commit-message: "chore: update supported Apple container / socktainer versions"
           title: "chore: update supported Apple container / socktainer versions"
-          body: Update `socktainer-versions.json` to the latest patch of the last 3 Apple container minor versions and their socktainer counterpart.
+          body: Update `socktainer-versions.json` to the latest patch of the last 3 Apple container minor versions and their socktainer counterpart, with the SHA-256 checksums of their socktainer archives.
           signoff: true
           delete-branch: true

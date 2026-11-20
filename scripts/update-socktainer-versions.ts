@@ -23,7 +23,19 @@ import { fileURLToPath } from 'node:url';
 // number of Apple container minor versions to support
 const SUPPORTED_MINOR_VERSIONS = 3;
 
-const versionsFile = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'socktainer-versions.json');
+// socktainer release asset embedded in the extension
+const SOCKTAINER_ASSET = 'socktainer.zip';
+
+const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const versionsFile = path.join(rootDir, 'socktainer-versions.json');
+
+export interface Release {
+  tag_name: string;
+  draft: boolean;
+  prerelease: boolean;
+  // digest is e.g. 'sha256:<hex>', computed by GitHub when the asset is uploaded
+  assets: { name: string; digest?: string }[];
+}
 
 export class SocktainerVersionsUpdater {
   // tag -> [minor, patch] e.g. 'v1.5.1' -> ['1.5', 1]
@@ -59,27 +71,48 @@ export class SocktainerVersionsUpdater {
     return Object.fromEntries(entries);
   }
 
-  private async fetchReleaseTags(repository: string): Promise<string[]> {
+  // socktainer version -> SHA-256 of its socktainer.zip release asset, for each socktainer version in use
+  public computeChecksums(versions: Record<string, string>, socktainerReleases: Release[]): Record<string, string> {
+    const entries = Object.values(versions).map(tag => {
+      const asset = socktainerReleases
+        .find(release => release.tag_name === tag)
+        ?.assets.find(releaseAsset => releaseAsset.name === SOCKTAINER_ASSET);
+      const sha256 = /^sha256:([\da-f]{64})$/.exec(asset?.digest ?? '')?.[1];
+      if (!sha256) {
+        throw new Error(`No SHA-256 digest found for the ${SOCKTAINER_ASSET} asset of socktainer ${tag}`);
+      }
+      return [tag, sha256];
+    });
+    return Object.fromEntries(entries);
+  }
+
+  private async fetchReleases(repository: string): Promise<Release[]> {
     const response = await fetch(`https://api.github.com/repos/${repository}/releases?per_page=100`, {
       headers: process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {},
     });
     if (!response.ok) {
       throw new Error(`Failed to fetch releases of ${repository}: ${response.status} ${response.statusText}`);
     }
-    const releases = (await response.json()) as { tag_name: string; draft: boolean; prerelease: boolean }[];
-    return releases.filter(release => !release.draft && !release.prerelease).map(release => release.tag_name);
+    const releases = (await response.json()) as Release[];
+    return releases.filter(release => !release.draft && !release.prerelease);
   }
 
   public async update(): Promise<void> {
+    const containerReleases = await this.fetchReleases('apple/container');
+    const socktainerReleases = await this.fetchReleases('socktainer/socktainer');
     const versions = this.computeVersions(
-      await this.fetchReleaseTags('apple/container'),
-      await this.fetchReleaseTags('socktainer/socktainer'),
+      containerReleases.map(release => release.tag_name),
+      socktainerReleases.map(release => release.tag_name),
     );
     if (Object.keys(versions).length === 0) {
       throw new Error('No Apple container version with a socktainer counterpart found');
     }
-    await fs.promises.writeFile(versionsFile, `${JSON.stringify(versions, undefined, 2)}\n`);
-    console.log('Updated', versionsFile, versions);
+    const checksums = this.computeChecksums(versions, socktainerReleases);
+    const entries = Object.fromEntries(
+      Object.entries(versions).map(([minor, version]) => [minor, { version, sha256: checksums[version] }]),
+    );
+    await fs.promises.writeFile(versionsFile, `${JSON.stringify(entries, undefined, 2)}\n`);
+    console.log('Updated', versionsFile, entries);
   }
 }
 
