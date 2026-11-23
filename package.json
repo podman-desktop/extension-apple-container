@@ -47,7 +47,7 @@
     "@vitest/coverage-v8": "^5.1.0",
     "@vitest/eslint-plugin": "^1.6.28",
     "adm-zip": "^0.6.1",
-    "autoprefixer": "^10.6.2",
+    "autoprefixer": "^10.7.0",
     "commitlint": "^21.2.4",
     "concurrently": "^10.0.7",
     "eslint": "^10.15.0",
