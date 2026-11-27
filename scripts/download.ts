@@ -16,12 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import AdmZip from 'adm-zip';
-// Apple container minor version -> socktainer version
+// Apple container minor version -> socktainer version and SHA-256 of its socktainer.zip release asset
 import socktainerVersions from '../socktainer-versions.json';
 
 // Fix __dirname and __filename in ES module scope
@@ -30,33 +31,20 @@ const __dirname = dirname(__filename);
 
 const binDir = path.resolve(__dirname, '..', 'dist', 'bin');
 
-class Downloader {
-  private async downloadFile(url: string, dest: string): Promise<void> {
+export class Downloader {
+  // The file is only written once its SHA-256 matches the expected one
+  private async downloadFile(url: string, dest: string, expectedSha256: string): Promise<void> {
     const res = await fetch(url);
     if (!res.ok) {
       throw new Error(`Failed to download ${url} (${res.status})`);
     }
 
-    const fileStream = fs.createWriteStream(dest);
-    const reader = res.body?.getReader();
-    if (!reader) throw new Error('No response body');
-
-    return new Promise((resolve, reject) => {
-      const pump = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            fileStream.write(value);
-          }
-          fileStream.end();
-          fileStream.on('finish', resolve);
-        } catch (err) {
-          reject(err);
-        }
-      };
-      pump();
-    });
+    const content = Buffer.from(await res.arrayBuffer());
+    const sha256 = createHash('sha256').update(content).digest('hex');
+    if (sha256 !== expectedSha256) {
+      throw new Error(`Checksum mismatch for ${url}: expected SHA-256 ${expectedSha256}, got ${sha256}`);
+    }
+    await fs.promises.writeFile(dest, content);
   }
 
   private async extractZip(filePath: string, targetDir: string): Promise<void> {
@@ -64,7 +52,7 @@ class Downloader {
     zip.extractAllTo(targetDir, true);
   }
 
-  public async downloadAndExtract(version: string, outputDir: string): Promise<void> {
+  public async downloadAndExtract(version: string, expectedSha256: string, outputDir: string): Promise<void> {
     const downloadUrl = `https://github.com/socktainer/socktainer/releases/download/${version}/socktainer.zip`;
     const downloadedZipFile = path.join(outputDir, 'socktainer.zip');
 
@@ -73,7 +61,7 @@ class Downloader {
     }
 
     console.log(`Downloading socktainer from ${downloadUrl}...`);
-    await this.downloadFile(downloadUrl, downloadedZipFile);
+    await this.downloadFile(downloadUrl, downloadedZipFile, expectedSha256);
 
     console.log(`Extracting ${downloadedZipFile} to ${outputDir}...`);
     await this.extractZip(downloadedZipFile, outputDir);
@@ -89,9 +77,9 @@ class Downloader {
   }
 }
 
-(async () => {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const downloader = new Downloader();
-  for (const [containerVersion, socktainerVersion] of Object.entries(socktainerVersions)) {
-    await downloader.downloadAndExtract(socktainerVersion, path.join(binDir, containerVersion));
+  for (const [containerVersion, { version, sha256 }] of Object.entries(socktainerVersions)) {
+    await downloader.downloadAndExtract(version, sha256, path.join(binDir, containerVersion));
   }
-})();
+}
