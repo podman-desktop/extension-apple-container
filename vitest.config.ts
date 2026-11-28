@@ -15,18 +15,25 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
+import { podmanDesktopApiMockPlugin } from '@podman-desktop/api-mocks-vitest/plugin';
 import { defineConfig } from 'vitest/config';
 
 // DefineWorkspace provides a nice type hinting DX
 export default defineConfig({
+  plugins: [podmanDesktopApiMockPlugin()],
   resolve: {
     alias: {
       '/@/': `${join(import.meta.dirname, 'src')}/`,
-      '@podman-desktop/api': resolve(import.meta.dirname, '__mocks__/@podman-desktop/api.js'),
     },
   },
   test: {
+    server: {
+      deps: {
+        // The published mock ends with `module.exports` inside a `"type": "module"` package; inlining lets Vitest transform it.
+        inline: ['@podman-desktop/api-mocks-vitest'],
+      },
+    },
     exclude: [
       'tests/playwright/**',
       '**/builtin/**',
